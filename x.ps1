@@ -1,0 +1,16 @@
+yarn start https://www.xiaohongshu.com/explore/5e71ac1900000000010036dc
+Start-Sleep -Seconds 15
+yarn start https://www.xiaohongshu.com/explore/5e74caa8000000000100b002
+Start-Sleep -Seconds 15
+yarn start https://www.xiaohongshu.com/explore/5ff2972e000000000100a154
+Start-Sleep -Seconds 15
+yarn start https://www.xiaohongshu.com/explore/6207ad94000000002103ca06
+Start-Sleep -Seconds 15
+yarn start https://www.xiaohongshu.com/explore/63dcd9ea000000001a024931
+Start-Sleep -Seconds 15
+yarn start https://www.xiaohongshu.com/explore/63ec65e700000000130113c6
+Start-Sleep -Seconds 15
+yarn start https://www.xiaohongshu.com/explore/63f4d73b00000000130133f4
+Start-Sleep -Seconds 15
+yarn start https://www.xiaohongshu.com/explore/6467a5e600000000130119e2
+Start-Sleep -Seconds 15
