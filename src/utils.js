@@ -23,4 +23,43 @@ const formatDateTime = (input, style = 0) => {
   return dateTime.toString();
 };
 
-export { urlRegex, formatDateTime };
+const generateXml = ({ key, value }) => {
+  if (typeof key !== 'string' || key === '') {
+    throw Error('parameter [key]: type of [string], non-empty, required');
+  }
+  if (typeof value !== 'string' && typeof value !== 'number') {
+    throw Error('parameter [value]: type of [string], default as [""]');
+  }
+  if (!value) {
+    return '';
+  }
+  return `<${key} v="${value}" />`;
+};
+
+const generateXmlList = ({ data, selector = '', tagName = '' }) => {
+  if (!(data instanceof Array)) {
+    throw Error('parameter [data]: type of [string], required');
+  }
+  if (typeof selector !== 'string') {
+    throw Error('parameter [selector]: type of [string], default as [""]');
+  }
+  if (typeof tagName !== 'string') {
+    throw Error('parameter [tagName]: type of [string], default as [""]');
+  }
+  // eslint-disable-next-line no-unused-vars
+  const itemList = data.map((d) => {
+    return eval(`d${selector}`).toString();
+  }).filter(v => v);
+  if (itemList.length <= 0) {
+    return '';
+  }
+  return `<${tagName}>${itemList.map(i => `<i v="${i}">`).join('')}</${tagName}>`;
+};
+
+const sleep = (ms) => {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+};
+
+export { urlRegex, formatDateTime, generateXml, generateXmlList, sleep };

@@ -1,6 +1,6 @@
 import cheerio from 'cheerio';
 import fetch from 'node-fetch';
-
+//
 import * as eagle from './eagle.js';
 import * as utils from './utils.js';
 
@@ -33,7 +33,7 @@ const check = (textWithUrl) => {
     'xiaohongshu.com/explore',
   ].reduce((prev, curr) => {
     return prev || textWithUrl.includes(curr);
-  }, true) : false;
+  }, false) : false;
 };
 
 const save = async (textWithUrl = '') => {
@@ -50,7 +50,7 @@ const save = async (textWithUrl = '') => {
     throw Error(`xiaohongshu | invalid url | url = ${url}`);
   }
   url = url.split('?')[0];
-  const result = await f(url).then((html) => {
+  await f(url).then((html) => {
     const $ = cheerio.load(html);
     let data = $('html body script:contains("window.__INITIAL_STATE__")').text();
     data = data.replace('window.__INITIAL_STATE__', 'data');
@@ -74,17 +74,32 @@ const save = async (textWithUrl = '') => {
     ) {
       throw new Error(`xiaohongshu | invalid note format | note = ${JSON.stringify(note)}`);
     }
+    const mediaCount = note.imageList.length + (note.video ? 1 : 0);
     // folder
-    await eagle.updateFolder({ name: 'xiaohongshu.com', description: '小红书' });
-    await eagle.updateFolder({ name: note.user.userId, parentName: 'xiaohongshu.com', description: note.user.nickname });
-    const folder = await eagle.updateFolder({ name: id, parentName: note.user.userId, description: note.title });
+    await eagle.updateFolder({ name: '.import', description: '小红书' });
+    await eagle.updateFolder({ name: '.xiaohongshu.com', parentName: '.import', description: '小红书' });
+    const folder = await eagle.updateFolder({
+      name: id,
+      parentName: '.xiaohongshu.com',
+      description: `<d>${[
+        utils.generateXml({ key: 'title', value: note.title }),
+        utils.generateXml({ key: 'media_count', value: mediaCount }),
+      ].join('')}</d>`,
+    });
     //
-    const atUserNicknameList = note.atUserList.map(atUser => atUser.nickname ? atUser.nickname : '').filter(s => s);
-    const annotation = `<author v="${note.user.nickname}" /><title v="${note.title}" /><desc v="${note.desc}" />${atUserNicknameList.length > 0 ? `<atUser>${atUserNicknameList.map(v => `<i v="${v}" />`).join('')}</atUser>` : ''}`;
+    const annotation = [
+      utils.generateXml({ key: 'creator', value: note.user.nickname }),
+      utils.generateXml({ key: 'title', value: note.title }),
+      utils.generateXml({ key: 'description', value: note.desc }),
+      utils.generateXml({ key: 'media_count', value: mediaCount }),
+      utils.generateXmlList({ data: note.atUserList, selector: '?.nickname || null', tagName: 'at_user_list' }),
+    ].join('');
     const tagList = [
-      `userId:xiaohongshu.com/${note.user.userId}`,
-      ...note.atUserList.map(atUser => atUser.userId ? `userId:xiaohongshu.com/${atUser.userId}` : '').filter(s => s),
-      ...note.tagList.map(tag => tag.name ? `tag:${tag.name}` : '').filter(t => t),
+      '_source=xiaohongshu.com',
+      `_user_id=xiaohongshu.com/${note.user.userId}`,
+      ...note.atUserList.filter(atUser => atUser?.userId || null).map(atUser => `_user_id=xiaohongshu.com/${atUser.userId}`),
+      ...note.tagList.filter(tag => tag?.name || null).map(tag => `_tag=xiaohongshu.com/${tag.name}`),
+      ...note.tagList.filter(tag => tag?.name || null).map(tag => `_union_tag=${tag.name}`),
     ];
     // image
     const payload = {
@@ -94,7 +109,7 @@ const save = async (textWithUrl = '') => {
           url: pngUrl,
           name: `${eagle.generateTitle(note.time + idx)}`,
           website: url,
-          annotation: `<d>${annotation}<url v="${pngUrl}" /></d>`,
+          annotation: `<d>${annotation}${utils.generateXml({ key: 'url', value: pngUrl })}</d>`,
           tags: tagList,
         };
       }),
@@ -116,12 +131,11 @@ const save = async (textWithUrl = '') => {
       ) {
         throw new Error(`xiaohongshu | invalid note format | video = ${JSON.stringify(video)}`);
       }
-      const backupUrlsList = video.backupUrls.filter(s => s);
       payload.items.push({
         url: video.masterUrl,
         name: `${eagle.generateTitle(note.time + payload.items.length)}`,
         website: url,
-        annotation: `<d>${annotation}<masterUrl v="${video.masterUrl}" />${backupUrlsList.length > 0 ? `<backupUrls>${backupUrlsList.map(v => `<i v="${v}" />`).join('')}</backupUrls>` : ''}</d>`,
+        annotation: `<d>${annotation}${utils.generateXmlList({ data: [ video.masterUrl, ...video.backupUrls ], tagName: 'url_list' })}</d>`,
         tags: tagList,
       });
     }
@@ -129,8 +143,6 @@ const save = async (textWithUrl = '') => {
   }).then((payload) => {
     return eagle.post('/api/item/addFromURLs', payload);
   });
-  console.log(JSON.stringify(result));
-  return 0;
 };
 
 export { check, save };
