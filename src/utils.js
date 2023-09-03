@@ -8,23 +8,23 @@ const urlRegex = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]
 
 const getHtml = async ({ url, fetchOption = {}, proxy = '', timeoutMs = 10000, debug = false }) => {
   // parameter
-  if (!check.string(url) || !urlRegex.exec(url)) {
+  if (check.not.string(url) || !urlRegex.exec(url)) {
     throw Error('utils | getHtml | parameter "url" should be "string" of valid url');
   }
-  if ((!check.string(proxy)) || (check.nonEmptyString(proxy) && !urlRegex.exec(proxy))) {
+  if ((check.not.string(proxy)) || (check.nonEmptyString(proxy) && !urlRegex.exec(proxy))) {
     throw Error('utils | getHtml | parameter "proxy" should be "string" of valid url OR empty string');
   }
-  if (!check.greaterOrEqual(timeoutMs, 10000)) {
+  if (check.not.greaterOrEqual(timeoutMs, 10000)) {
     throw Error('utils | getHtml | parameter "timeout" should be "number" greator than 10000');
   }
-  if (!check.boolean(debug)) {
+  if (check.not.boolean(debug)) {
     throw Error('utils | getHtml | parameter "debug" should be "bool"');
   }
   // fetch option
-  if (!check.object(fetchOption)) {
+  if (check.not.object(fetchOption)) {
     fetchOption = {};
   }
-  if (!check.object(fetchOption.headers)) {
+  if (check.not.object(fetchOption.headers)) {
     fetchOption.headers = {};
   }
   fetchOption.headers['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36';
@@ -65,22 +65,22 @@ const getHtml = async ({ url, fetchOption = {}, proxy = '', timeoutMs = 10000, d
 
 const getHtmlByPuppeteer = async ({ url, header = {}, blockUrlList = [], timeoutMs = 10000, proxy = '', debug = false }) => {
   // parameter
-  if (!check.string(url) || !urlRegex.exec(url)) {
+  if (check.not.string(url) || !urlRegex.exec(url)) {
     throw Error('utils | getHtmlByPuppeteer | parameter "url" should be "string" of valid url');
   }
-  if (!check.object.of.string(header)) {
+  if (check.not.object.of.string(header)) {
     throw Error('utils | getHtmlByPuppeteer | parameter "header" should be "Object<String>"');
   }
-  if (!check.array.of.string(blockUrlList)) {
+  if (check.not.array.of.string(blockUrlList)) {
     throw Error('utils | getHtmlByPuppeteer | parameter "blockUrlList" should be "Array<String>"');
   }
-  if ((!check.string(proxy)) || (check.nonEmptyString(proxy) && !urlRegex.exec(proxy))) {
+  if ((check.not.string(proxy)) || (check.nonEmptyString(proxy) && !urlRegex.exec(proxy))) {
     throw Error('utils | getHtmlByPuppeteer | parameter "proxy" should be "string" of valid url OR empty string');
   }
-  if (!check.greaterOrEqual(timeoutMs, 10000)) {
+  if (check.not.greaterOrEqual(timeoutMs, 10000)) {
     throw Error('utils | getHtmlByPuppeteer | parameter "timeout" should be "number" greator than 10000');
   }
-  if (!check.boolean(debug)) {
+  if (check.not.boolean(debug)) {
     throw Error('utils | getHtmlByPuppeteer | parameter "debug" should be "bool"');
   }
   // brower
@@ -96,7 +96,7 @@ const getHtmlByPuppeteer = async ({ url, header = {}, blockUrlList = [], timeout
   const browser = await puppeteer.launch(browserOption);
   // page
   const page = (await browser.pages())[0] || await browser.newPage();
-  if (!check.emptyObject(header)) {
+  if (check.not.emptyObject(header)) {
     await page.setExtraHTTPHeaders(header);
   }
   if (check.nonEmptyArray(blockUrlList)) {
