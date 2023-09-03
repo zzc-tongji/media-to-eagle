@@ -1,30 +1,8 @@
+import check from 'check-types';
 import cheerio from 'cheerio';
-import fetch from 'node-fetch';
 //
 import * as eagle from './eagle.js';
 import * as utils from './utils.js';
-
-const f = async (resource, options) => {
-  if (!(options instanceof Object)) {
-    options = {};
-  }
-  options.redirect = 'manual';
-  if (!(options.headers instanceof Object)) {
-    options.headers = {};
-  }
-  options.headers['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36';
-  //
-  return fetch(resource, options)
-    .catch(() => {
-      throw new Error(`xiaohongshu | fetch ${resource} | network issue`);
-    })
-    .then((response) => {
-      if (response.status <= 199 || response.status > 400) {
-        throw new Error(`xiaohongshu | fetch ${resource} | incorrect http status code | response.status = ${response.status}`);
-      }
-      return response.text();
-    });
-};
 
 const redIdMap = {};
 
@@ -34,7 +12,7 @@ const getRedIdFromUserId = async (userId) => {
     return redIdMap[userId];
   }
   // parse data
-  const html = await f(`https://www.xiaohongshu.com/user/profile/${userId}`);
+  const html = await utils.getHtml({ url: `https://www.xiaohongshu.com/user/profile/${userId}` });
   const $ = cheerio.load(html);
   let data = $('html body script:contains("window.__INITIAL_STATE__")').text();
   data = data.replace('window.__INITIAL_STATE__', 'data');
@@ -47,33 +25,29 @@ const getRedIdFromUserId = async (userId) => {
   return redId;
 };
 
-const check = (textWithUrl) => {
-  return typeof textWithUrl === 'string' ? [
-    'xhslink.com',
-    'xiaohongshu.com/discovery/item',
-    'xiaohongshu.com/explore',
+const getUrl = (textWithUrl = '') => {
+  if (check.not.string(textWithUrl)) {
+    return '';
+  }
+  const url = utils.urlRegex.exec(textWithUrl)?.[0] || '';
+  const valid = [
+    '/xhslink.com/',
+    '/www.xiaohongshu.com/discovery/item/',
+    '/www.xiaohongshu.com/explore/',
   ].reduce((prev, curr) => {
-    return prev || textWithUrl.includes(curr);
-  }, false) : false;
+    return prev || url.includes(curr);
+  }, false);
+  return valid ? url : '';
 };
 
 const save = async (textWithUrl = '') => {
   // get note url
-  let url = utils.urlRegex.exec(textWithUrl)?.[0] || '';
-  if (url.includes('xhslink.com')) {
-    url = await f(url).then((html) => {
-      return utils.urlRegex.exec(html)?.[0] || '';
-    });
+  const url = getUrl(textWithUrl);
+  if (check.emptyString(url)) {
+    throw Error(`xiaohongshu | invalid text with url | textWithUrl = ${textWithUrl}`);
   }
-  if (url.includes('xiaohongshu.com/discovery/item')) {
-    url = url.replace('/discovery/item', '/explore');
-  }
-  if (!url.includes('xiaohongshu.com/explore')) {
-    throw Error(`xiaohongshu | invalid url | url = ${url}`);
-  }
-  url = url.split('?')[0];
   // parse data
-  const html = await f(url);
+  const html = await utils.getHtml({ url });
   const $ = cheerio.load(html);
   let data = $('html body script:contains("window.__INITIAL_STATE__")').text();
   data = data.replace('window.__INITIAL_STATE__', 'data');
@@ -106,36 +80,36 @@ const save = async (textWithUrl = '') => {
     ...note.tagList.filter(tag => tag?.name || null).map(tag => `_tag=xiaohongshu.com/${tag.name}`),
     ...note.tagList.filter(tag => tag?.name || null).map(tag => `_union_tag=${tag.name}`),
   ];
-  const mediaCount = note.imageList.length + (note.video ? 1 : 0);
-  const annotation = [
-    utils.generateXml({ key: 'creator', value: note.user.nickname }),
-    utils.generateXml({ key: 'creator_red_id', value: redIdList[0] }),
-    utils.generateXml({ key: 'title', value: note.title }),
-    utils.generateXml({ key: 'description', value: note.desc }),
-    utils.generateXml({ key: 'media_count', value: mediaCount }),
-    utils.generateXmlList({ data: note.atUserList, selector: '?.nickname || null', tagName: 'at_user_list' }),
-    utils.generateXmlList({ data: redIdList.slice(1), selector: '', tagName: 'at_user_red_id_list' }),
-  ].join('');
+  const noteMediaCount = note.imageList.length + (note.video ? 1 : 0);
+  const annotation = {
+    creator: {
+      name: note.user.nickname,
+      red_id: redIdList[0],
+    },
+    title: note.title || undefined,
+    description: note.desc || undefined,
+    note_media_count: noteMediaCount,
+    at_user_list: note.atUserList.length > 0 ? note.atUserList.map((u, i) => {
+      return { name: u.nickname, red_id: redIdList[i] };
+    }) : undefined,
+  };
   // folder
-  await eagle.updateFolder({ name: '.import', description: '小红书' });
-  await eagle.updateFolder({ name: '.xiaohongshu.com', parentName: '.import', description: '小红书' });
+  await eagle.updateFolder({ name: '.import' });
+  await eagle.updateFolder({ name: '.xiaohongshu.com', parentName: '.import' });
   const folder = await eagle.updateFolder({
     name: id,
     parentName: '.xiaohongshu.com',
-    description: `<d>${[
-      utils.generateXml({ key: 'title', value: note.title }),
-      utils.generateXml({ key: 'media_count', value: mediaCount }),
-    ].join('')}</d>`,
+    description: JSON.stringify({ name: note.title || note.desc.split('\n')[0], note_media_count: noteMediaCount }),
   });
   // image
   const payload = {
     items: note.imageList.map((image, idx) => {
-      const pngUrl = image.url.replace('\\u002F', '/');
+      const mediaUrl = image.url.replace('\\u002F', '/');
       return {
-        url: pngUrl,
+        url: mediaUrl,
         name: `${eagle.generateTitle(note.time + idx)}`,
-        website: url,
-        annotation: `<d>${annotation}${utils.generateXml({ key: 'url', value: pngUrl })}</d>`,
+        website: `https://www.xiaohongshu.com/explore/${id}`,
+        annotation: JSON.stringify({ ...annotation, media_url: mediaUrl }),
         tags: tagList,
       };
     }),
@@ -160,8 +134,8 @@ const save = async (textWithUrl = '') => {
     payload.items.push({
       url: video.masterUrl,
       name: `${eagle.generateTitle(note.time + payload.items.length)}`,
-      website: url,
-      annotation: `<d>${annotation}${utils.generateXmlList({ data: [ video.masterUrl, ...video.backupUrls ], tagName: 'url_list' })}</d>`,
+      website: `https://www.xiaohongshu.com/explore/${id}`,
+      annotation: JSON.stringify({ ...annotation, media_url_list: [ video.masterUrl, ...video.backupUrls ] }),
       tags: tagList,
     });
   }
@@ -169,4 +143,4 @@ const save = async (textWithUrl = '') => {
   return await eagle.post('/api/item/addFromURLs', payload);
 };
 
-export { check, save };
+export { getUrl, save };
