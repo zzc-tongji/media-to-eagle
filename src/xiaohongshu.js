@@ -6,13 +6,13 @@ import * as utils from './utils.js';
 
 const redIdMap = {};
 
-const getRedIdFromUserId = async (userId) => {
+const getRedIdFromUserId = async ({ userId, opt }) => {
   // cache get
   if (redIdMap[userId]) {
     return redIdMap[userId];
   }
   // parse data
-  const html = await utils.getHtml({ url: `https://www.xiaohongshu.com/user/profile/${userId}` });
+  const html = await utils.getHtml({ ...opt, url: `https://www.xiaohongshu.com/user/profile/${userId}` });
   const $ = cheerio.load(html);
   let data = $('html body script:contains("window.__INITIAL_STATE__")').text();
   data = data.replace('window.__INITIAL_STATE__', 'data');
@@ -29,7 +29,7 @@ const getUrl = (textWithUrl = '') => {
   if (check.not.string(textWithUrl)) {
     return '';
   }
-  const url = utils.urlRegex.exec(textWithUrl)?.[0] || '';
+  let url = utils.urlRegex.exec(textWithUrl)?.[0] || '';
   const valid = [
     '/xhslink.com/',
     '/www.xiaohongshu.com/discovery/item/',
@@ -37,17 +37,28 @@ const getUrl = (textWithUrl = '') => {
   ].reduce((prev, curr) => {
     return prev || url.includes(curr);
   }, false);
-  return valid ? url : '';
+  if (!valid) {
+    return '';
+  }
+  url = url.split('?')[0];
+  url = url.split('#')[0];
+  return url;
 };
 
-const save = async (textWithUrl = '') => {
+const save = async ({ textWithUrl, headerMap, proxy }) => {
   // get note url
   const url = getUrl(textWithUrl);
   if (check.emptyString(url)) {
     throw Error(`xiaohongshu | invalid text with url | textWithUrl = ${textWithUrl}`);
   }
   // parse data
-  const html = await utils.getHtml({ url });
+  const opt = {
+    fetchOption: {
+      headers: headerMap,
+    },
+    proxy,
+  };
+  const html = await utils.getHtml({ ...opt, url });
   const $ = cheerio.load(html);
   let data = $('html body script:contains("window.__INITIAL_STATE__")').text();
   data = data.replace('window.__INITIAL_STATE__', 'data');
@@ -71,7 +82,7 @@ const save = async (textWithUrl = '') => {
     throw new Error(`xiaohongshu | invalid note format | note = ${JSON.stringify(note)}`);
   }
   const redIdList = (await Promise.all(
-    [ note.user, ...note.atUserList ].map(user => getRedIdFromUserId(user.userId)),
+    [ note.user, ...note.atUserList ].map(user => getRedIdFromUserId({ userId: user.userId, opt })),
   ));
   const tagList = [
     '_source=xiaohongshu.com',
