@@ -3,7 +3,6 @@ import cheerio from 'cheerio';
 //
 import * as eagle from './eagle.js';
 import * as utils from './utils.js';
-
 const redIdMap = {};
 
 const getRedIdFromUserId = async ({ userId, opt }) => {

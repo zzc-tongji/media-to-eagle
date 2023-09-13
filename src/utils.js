@@ -3,13 +3,40 @@ import fs from 'fs';
 import fetch from 'node-fetch';
 import { HttpsProxyAgent } from 'https-proxy-agent';
 import puppeteer from 'puppeteer';
+import randomUseragent from 'random-useragent';
 
 const urlRegex = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*)/;
 
-const getHtml = async ({ url, fetchOption = {}, proxy = '', timeoutMs = 10000, debug = false }) => {
+const formatDateTime = (input, style = 0) => {
+  // format as 'yyyyMMdd_HHmmss_SSS'
+  let dateTime;
+  if (typeof input == 'number' || typeof input == 'string') {
+    dateTime = new Date(input);
+  } else if (input instanceof Date) {
+    dateTime = input;
+  } else {
+    dateTime = new Date();
+  }
+  const year = String(dateTime.getUTCFullYear()).padStart(4, 0);
+  const month = String(dateTime.getUTCMonth() + 1).padStart(2, 0);
+  const day = String(dateTime.getUTCDate()).padStart(2, 0);
+  const hour = String(dateTime.getUTCHours()).padStart(2, 0);
+  const minute = String(dateTime.getMinutes()).padStart(2, 0);
+  const second = String(dateTime.getSeconds()).padStart(2, 0);
+  const milliSecond = String(dateTime.getMilliseconds()).padStart(3, 0);
+  if (style === 0) {
+    return `${year}${month}${day}_${hour}${minute}${second}_${milliSecond}`;
+  }
+  return dateTime.toString();
+};
+
+const getHtml = async ({ url, fetchOption = {}, randomUserAgent = true, proxy = '', timeoutMs = 10000, debug = false }) => {
   // parameter
   if (check.not.string(url) || !urlRegex.exec(url)) {
     throw Error('utils | getHtml | parameter "url" should be "string" of valid url');
+  }
+  if (check.not.boolean(randomUserAgent)) {
+    throw Error('utils | getHtml | parameter "randomUserAgent" should be "bool"');
   }
   if ((check.not.string(proxy)) || (check.nonEmptyString(proxy) && !urlRegex.exec(proxy))) {
     throw Error('utils | getHtml | parameter "proxy" should be "string" of valid url OR empty string');
@@ -27,7 +54,9 @@ const getHtml = async ({ url, fetchOption = {}, proxy = '', timeoutMs = 10000, d
   if (check.not.object(fetchOption.headers)) {
     fetchOption.headers = {};
   }
-  fetchOption.headers['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36';
+  if (randomUserAgent) {
+    fetchOption.headers['User-Agent'] = getRandomUsarAgent();
+  }
   // other option
   if (check.not.emptyString(proxy)) {
     let proxyAgent;
@@ -63,7 +92,7 @@ const getHtml = async ({ url, fetchOption = {}, proxy = '', timeoutMs = 10000, d
   return html;
 };
 
-const getHtmlByPuppeteer = async ({ url, header = {}, blockUrlList = [], timeoutMs = 10000, proxy = '', debug = false }) => {
+const getHtmlByPuppeteer = async ({ url, header = {}, blockUrlList = [], randomUserAgent = true, proxy = '', timeoutMs = 10000, debug = false }) => {
   // parameter
   if (check.not.string(url) || !urlRegex.exec(url)) {
     throw Error('utils | getHtmlByPuppeteer | parameter "url" should be "string" of valid url');
@@ -73,6 +102,9 @@ const getHtmlByPuppeteer = async ({ url, header = {}, blockUrlList = [], timeout
   }
   if (check.not.array.of.string(blockUrlList)) {
     throw Error('utils | getHtmlByPuppeteer | parameter "blockUrlList" should be "Array<String>"');
+  }
+  if (check.not.boolean(randomUserAgent)) {
+    throw Error('utils | getHtmlByPuppeteer | parameter "randomUserAgent" should be "bool"');
   }
   if ((check.not.string(proxy)) || (check.nonEmptyString(proxy) && !urlRegex.exec(proxy))) {
     throw Error('utils | getHtmlByPuppeteer | parameter "proxy" should be "string" of valid url OR empty string');
@@ -98,6 +130,9 @@ const getHtmlByPuppeteer = async ({ url, header = {}, blockUrlList = [], timeout
   const page = (await browser.pages())[0] || await browser.newPage();
   if (check.not.emptyObject(header)) {
     await page.setExtraHTTPHeaders(header);
+  }
+  if (randomUserAgent) {
+    await page.setUserAgent(getRandomUsarAgent());
   }
   if (check.nonEmptyArray(blockUrlList)) {
     await page.setRequestInterception(true);
@@ -131,60 +166,28 @@ const getHtmlByPuppeteer = async ({ url, header = {}, blockUrlList = [], timeout
   return html;
 };
 
-const formatDateTime = (input, style = 0) => {
-  // format as 'yyyyMMdd_HHmmss_SSS'
-  let dateTime;
-  if (typeof input == 'number' || typeof input == 'string') {
-    dateTime = new Date(input);
-  } else if (input instanceof Date) {
-    dateTime = input;
-  } else {
-    dateTime = new Date();
-  }
-  const year = String(dateTime.getUTCFullYear()).padStart(4, 0);
-  const month = String(dateTime.getUTCMonth() + 1).padStart(2, 0);
-  const day = String(dateTime.getUTCDate()).padStart(2, 0);
-  const hour = String(dateTime.getUTCHours()).padStart(2, 0);
-  const minute = String(dateTime.getMinutes()).padStart(2, 0);
-  const second = String(dateTime.getSeconds()).padStart(2, 0);
-  const milliSecond = String(dateTime.getMilliseconds()).padStart(3, 0);
-  if (style === 0) {
-    return `${year}${month}${day}_${hour}${minute}${second}_${milliSecond}`;
-  }
-  return dateTime.toString();
-};
-
-const generateXml = ({ key, value }) => {
-  if (typeof key !== 'string' || key === '') {
-    throw Error('parameter [key]: type of [string], non-empty, required');
-  }
-  if (typeof value !== 'string' && typeof value !== 'number') {
-    throw Error('parameter [value]: type of [string], default as [""]');
-  }
-  if (!value) {
-    return '';
-  }
-  return `<${key} v="${value}" />`;
-};
-
-const generateXmlList = ({ data, selector = '', tagName = '' }) => {
-  if (!(data instanceof Array)) {
-    throw Error('parameter [data]: type of [string], required');
-  }
-  if (typeof selector !== 'string') {
-    throw Error('parameter [selector]: type of [string], default as [""]');
-  }
-  if (typeof tagName !== 'string') {
-    throw Error('parameter [tagName]: type of [string], default as [""]');
-  }
-  // eslint-disable-next-line no-unused-vars
-  const itemList = data.map((d) => {
-    return eval(`d${selector}`).toString();
-  }).filter(v => v);
-  if (itemList.length <= 0) {
-    return '';
-  }
-  return `<${tagName}>${itemList.map(i => `<i v="${i}">`).join('')}</${tagName}>`;
+const getRandomUsarAgent = () => {
+  return randomUseragent.getRandom((ua) => {
+    const ualc = ua.userAgent.toLowerCase();
+    return (
+      (
+        ualc.includes('firefox') ||
+        ualc.includes('chrome') ||
+        ualc.includes('edge') ||
+        ualc.includes('safari')
+      ) &&
+      (
+        ualc.includes('windows') ||
+        ualc.includes('mac')
+      ) &&
+      !(
+        ualc.includes('mobile') ||
+        ualc.includes('arm') ||
+        ualc.includes('linux') ||
+        ualc.includes('firefox/29')
+      )
+    );
+  });
 };
 
 const sleep = (ms) => {
@@ -193,4 +196,4 @@ const sleep = (ms) => {
   });
 };
 
-export { urlRegex, getHtml, getHtmlByPuppeteer, formatDateTime, generateXml, generateXmlList, sleep };
+export { urlRegex, getHtml, getHtmlByPuppeteer, formatDateTime, sleep };
