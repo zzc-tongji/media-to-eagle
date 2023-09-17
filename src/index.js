@@ -20,8 +20,7 @@ const main = async () => {
   parser.add_argument('--setting', '-s', { help: 'setting for fetching' });
   parser.add_argument('--proxy', '-p', { help: 'proxy server' });
   parser.add_argument('--interval', '-i', { help: 'wait time (ms) after fetching' });
-  parser.add_argument('--interval-instagram', { help: 'wait time (ms) after fetching from "instagram.com"', dest: 'interval-instagram' });
-  parser.add_argument('--interval-xiaohongshu', { help: 'wait time (ms) after fetching from "xiaohongshu.com"', dest: 'interval-xiaohongshu' });
+  parser.add_argument('--debug', '-d', { help: 'debug mode' });
   const argv = parser.parse_args();
   // url list
   const urlList = [];
@@ -33,7 +32,7 @@ const main = async () => {
       urlList.push(...fs.readFileSync(argv.list, { encoding: 'utf-8' }).split(/\r?\n/).map((url) => {
         return url.trim();
       }).filter((url) => {
-        return check.not.emptyString(url) && !url.startsWith('#');
+        return check.not.emptyString(url) && !url.startsWith('#') && !url.startsWith(';') && !url.startsWith('//');
       }));
     } catch {
       console.error(`invalid parameter | --list="${argv.list}" | no such text file`);
@@ -71,12 +70,13 @@ const main = async () => {
         const s = setting[k] || {};
         let success = false;
         try {
-          await handler.save({
+          const message = await handler.save({
             textWithUrl: url,
             headerMap: s.headerMap || {},
             proxy: s.proxy || proxy || '',
+            debug: argv.debug ? true : false,
           });
-          console.log(`${url} | ${k} | ok`);
+          console.log(`${url} | ${message}`);
         } catch (error) {
           console.error(`${url} | ${error.message}`);
         }

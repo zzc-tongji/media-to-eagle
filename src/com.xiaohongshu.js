@@ -1,3 +1,6 @@
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+//
 import check from 'check-types';
 import cheerio from 'cheerio';
 //
@@ -44,7 +47,7 @@ const getUrl = (textWithUrl = '') => {
   return url;
 };
 
-const save = async ({ textWithUrl, headerMap, proxy }) => {
+const save = async ({ textWithUrl, headerMap, proxy, debug }) => {
   // get note url
   const url = getUrl(textWithUrl);
   if (check.emptyString(url)) {
@@ -65,6 +68,9 @@ const save = async ({ textWithUrl, headerMap, proxy }) => {
     (check.string(headerMap['user-agent']) && check.not.emptyArray(headerMap['user-agent']))
   ) {
     opt.randomUserAgent = false;
+  }
+  if (debug) {
+    opt.debug = true;
   }
   //
   const html = await utils.getHtml({ ...opt, url });
@@ -102,7 +108,7 @@ const save = async ({ textWithUrl, headerMap, proxy }) => {
     ...note.tagList.filter(tag => tag?.name || null).map(tag => `_tag=xiaohongshu.com/${tag.name}`),
     ...note.tagList.filter(tag => tag?.name || null).map(tag => `_union_tag=${tag.name}`),
   ];
-  const noteMediaCount = note.imageList.length + (note.video ? 1 : 0);
+  const mediaCount = note.imageList.length + (note.video ? 1 : 0);
   const annotation = {
     creator: {
       name: note.user.nickname,
@@ -110,7 +116,7 @@ const save = async ({ textWithUrl, headerMap, proxy }) => {
     },
     title: note.title || undefined,
     description: note.desc || undefined,
-    note_media_count: noteMediaCount,
+    media_count: mediaCount,
     at_user_list: note.atUserList.length > 0 ? note.atUserList.map((u, i) => {
       return { name: u.nickname, red_id: redIdList[i] };
     }) : undefined,
@@ -121,18 +127,38 @@ const save = async ({ textWithUrl, headerMap, proxy }) => {
   const folder = await eagle.updateFolder({
     name: id,
     parentName: '.xiaohongshu.com',
-    description: JSON.stringify({ name: note.title || note.desc.split('\n')[0], note_media_count: noteMediaCount }),
+    description: JSON.stringify({ media_count: mediaCount, name: note.title || note.desc.split('\n')[0] }),
   });
+  // meta
+  const website = `https://www.xiaohongshu.com/explore/${id}`;
+  const metaFile = `com.xiaohongshu.${id}.json`;
+  fs.writeFileSync(metaFile, JSON.stringify(note, null, 2));
+  await eagle.post('/api/item/addFromPaths', {
+    items: [
+      {
+        path: path.resolve(metaFile),
+        name: `${eagle.generateTitle(note.time)}`,
+        website,
+        tags: tagList,
+        annotation: JSON.stringify(annotation),
+      },
+    ],
+    folderId: folder.id,
+  });
+  await utils.sleep(1000);
+  if (!debug) {
+    fs.unlinkSync(metaFile);
+  }
   // image
   const payload = {
     items: note.imageList.map((image, idx) => {
       const mediaUrl = (loggedIn ? image.infoList.find(info => info.imageScene === 'CRD_WM_JPG').url : image.url).replace('\\u002F', '/');
       return {
         url: mediaUrl,
-        name: `${eagle.generateTitle(note.time + idx)}`,
-        website: `https://www.xiaohongshu.com/explore/${id}`,
-        annotation: JSON.stringify({ ...annotation, media_url: mediaUrl }),
+        name: `${eagle.generateTitle(note.time + 1 + idx)}`,
+        website,
         tags: tagList,
+        annotation: JSON.stringify({ ...annotation, media_url: mediaUrl }),
       };
     }),
     folderId: folder.id,
@@ -155,7 +181,7 @@ const save = async ({ textWithUrl, headerMap, proxy }) => {
     }
     payload.items.push({
       url: video.masterUrl,
-      name: `${eagle.generateTitle(note.time + payload.items.length)}`,
+      name: `${eagle.generateTitle(note.time + 1 + payload.items.length)}`,
       website: `https://www.xiaohongshu.com/explore/${id}`,
       annotation: JSON.stringify({ ...annotation, media_url_list: [ video.masterUrl, ...video.backupUrls ] }),
       tags: tagList,

@@ -87,7 +87,7 @@ const getHtml = async ({ url, fetchOption = {}, randomUserAgent = true, proxy = 
   if (debug) {
     const file = 'get-html.html';
     console.log(`HTML content of "${url}" is saved to "${file}".`);
-    fs.writeFileSync(file, html);
+    fs.writeFileSync(file, JSON.stringify(html, null, 2));
   }
   return html;
 };
@@ -160,7 +160,7 @@ const getHtmlByPuppeteer = async ({ url, headerMap = {}, blockUrlList = [], rand
     const file = 'get-html-by-puppeteer.html';
     console.log(`HTML content of "${url}" is saved to "${file}".`);
     fs.writeFileSync(file, html);
-    await sleep(600000);
+    await sleep(10000);
   }
   await browser.close();
   return html;
