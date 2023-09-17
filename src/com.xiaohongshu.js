@@ -73,6 +73,7 @@ const save = async ({ textWithUrl, headerMap, proxy }) => {
   data = data.replace('window.__INITIAL_STATE__', 'data');
   eval(data);
   // validate data
+  const loggedIn = data?.user?.loggedIn || false;
   const id = data?.note?.firstNoteId || '';
   const note = data?.note?.noteDetailMap[id]?.note || null;
   if (!(note instanceof Object) || Object.keys(note) <= 0) {
@@ -94,6 +95,7 @@ const save = async ({ textWithUrl, headerMap, proxy }) => {
     [ note.user, ...note.atUserList ].map(user => getRedIdFromUserId({ userId: user.userId, opt })),
   ));
   const tagList = [
+    `_login=${loggedIn}`,
     '_source=xiaohongshu.com',
     `_user_id=xiaohongshu.com/${note.user.userId}`,
     ...note.atUserList.filter(atUser => atUser?.userId || null).map(atUser => `_user_id=xiaohongshu.com/${atUser.userId}`),
@@ -124,7 +126,7 @@ const save = async ({ textWithUrl, headerMap, proxy }) => {
   // image
   const payload = {
     items: note.imageList.map((image, idx) => {
-      const mediaUrl = image.url.replace('\\u002F', '/');
+      const mediaUrl = (loggedIn ? image.infoList.find(info => info.imageScene === 'CRD_WM_JPG').url : image.url).replace('\\u002F', '/');
       return {
         url: mediaUrl,
         name: `${eagle.generateTitle(note.time + idx)}`,
@@ -160,7 +162,8 @@ const save = async ({ textWithUrl, headerMap, proxy }) => {
     });
   }
   // add to eagle
-  return await eagle.post('/api/item/addFromURLs', payload);
+  await eagle.post('/api/item/addFromURLs', payload);
+  return `com.xiaohongshu | ok${loggedIn ? ' | login' : ''}`;
 };
 
 export { getUrl, save };
