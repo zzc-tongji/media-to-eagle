@@ -92,7 +92,7 @@ const getHtml = async ({ url, fetchOption = {}, randomUserAgent = true, proxy = 
   return html;
 };
 
-const getHtmlByPuppeteer = async ({ url, header = {}, blockUrlList = [], randomUserAgent = true, proxy = '', timeoutMs = 10000, debug = false }) => {
+const getHtmlByPuppeteer = async ({ url, header = {}, blockUrlList = [], randomUserAgent = true, proxy = '', timeoutMs = 60000, debug = false }) => {
   // parameter
   if (check.not.string(url) || !urlRegex.exec(url)) {
     throw Error('utils | getHtmlByPuppeteer | parameter "url" should be "string" of valid url');
@@ -110,7 +110,7 @@ const getHtmlByPuppeteer = async ({ url, header = {}, blockUrlList = [], randomU
     throw Error('utils | getHtmlByPuppeteer | parameter "proxy" should be "string" of valid url OR empty string');
   }
   if (check.not.greaterOrEqual(timeoutMs, 10000)) {
-    throw Error('utils | getHtmlByPuppeteer | parameter "timeout" should be "number" greator than 10000');
+    throw Error('utils | getHtmlByPuppeteer | parameter "timeout" should be "number" greator than 60000');
   }
   if (check.not.boolean(debug)) {
     throw Error('utils | getHtmlByPuppeteer | parameter "debug" should be "bool"');

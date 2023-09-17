@@ -51,12 +51,22 @@ const save = async ({ textWithUrl, headerMap, proxy }) => {
     throw Error(`xiaohongshu | invalid text with url | textWithUrl = ${textWithUrl}`);
   }
   // parse data
-  const opt = {
-    fetchOption: {
-      headers: headerMap,
-    },
-    proxy,
-  };
+  const opt = {};
+  opt.timeoutMs = 10000;
+  if (check.string(proxy)) {
+    opt.proxy = proxy;
+  }
+  opt.fetchOption = {};
+  if (check.object(headerMap)) {
+    opt.fetchOption.headers = headerMap;
+  }
+  if (
+    (check.string(headerMap['User-Agent']) && check.not.emptyArray(headerMap['User-Agent'])) ||
+    (check.string(headerMap['user-agent']) && check.not.emptyArray(headerMap['user-agent']))
+  ) {
+    opt.randomUserAgent = false;
+  }
+  //
   const html = await utils.getHtml({ ...opt, url });
   const $ = cheerio.load(html);
   let data = $('html body script:contains("window.__INITIAL_STATE__")').text();
