@@ -48,7 +48,7 @@ const save = async ({ textWithUrl, headerMap, proxy }) => {
   // get note url
   const url = getUrl(textWithUrl);
   if (check.emptyString(url)) {
-    throw Error(`xiaohongshu | invalid text with url | textWithUrl = ${textWithUrl}`);
+    throw Error(`com.xiaohongshu | invalid text with url | textWithUrl = ${textWithUrl}`);
   }
   // parse data
   const opt = {};
@@ -76,7 +76,7 @@ const save = async ({ textWithUrl, headerMap, proxy }) => {
   const id = data?.note?.firstNoteId || '';
   const note = data?.note?.noteDetailMap[id]?.note || null;
   if (!(note instanceof Object) || Object.keys(note) <= 0) {
-    throw new Error(`xiaohongshu | note non-existent | url = ${url}`);
+    throw new Error(`com.xiaohongshu | note non-existent | url = ${url}`);
   }
   // common
   if (
@@ -88,7 +88,7 @@ const save = async ({ textWithUrl, headerMap, proxy }) => {
     (!(note.tagList instanceof Array)) ||
     (!(note.atUserList instanceof Array))
   ) {
-    throw new Error(`xiaohongshu | invalid note format | note = ${JSON.stringify(note)}`);
+    throw new Error(`com.xiaohongshu | invalid note format | note = ${JSON.stringify(note)}`);
   }
   const redIdList = (await Promise.all(
     [ note.user, ...note.atUserList ].map(user => getRedIdFromUserId({ userId: user.userId, opt })),
@@ -143,13 +143,13 @@ const save = async ({ textWithUrl, headerMap, proxy }) => {
       note?.video?.media?.stream?.av1 || [],
     ].filter(v => v.length > 0)?.['0']?.['0'] || null;
     if (!video) {
-      throw new Error(`xiaohongshu | invalid note format | note.video = ${JSON.stringify(note)}`);
+      throw new Error(`com.xiaohongshu | invalid note format | note.video = ${JSON.stringify(note)}`);
     }
     if (
       typeof video.masterUrl != 'string' ||
       !(video.backupUrls instanceof Array)
     ) {
-      throw new Error(`xiaohongshu | invalid note format | video = ${JSON.stringify(video)}`);
+      throw new Error(`com.xiaohongshu | invalid note format | video = ${JSON.stringify(video)}`);
     }
     payload.items.push({
       url: video.masterUrl,

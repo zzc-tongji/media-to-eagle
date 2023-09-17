@@ -92,13 +92,13 @@ const getHtml = async ({ url, fetchOption = {}, randomUserAgent = true, proxy = 
   return html;
 };
 
-const getHtmlByPuppeteer = async ({ url, header = {}, blockUrlList = [], randomUserAgent = true, proxy = '', timeoutMs = 60000, debug = false }) => {
+const getHtmlByPuppeteer = async ({ url, headerMap = {}, blockUrlList = [], randomUserAgent = true, proxy = '', timeoutMs = 60000, debug = false }) => {
   // parameter
   if (check.not.string(url) || !urlRegex.exec(url)) {
     throw Error('utils | getHtmlByPuppeteer | parameter "url" should be "string" of valid url');
   }
-  if (check.not.object.of.string(header)) {
-    throw Error('utils | getHtmlByPuppeteer | parameter "header" should be "Object<String>"');
+  if (check.not.object.of.string(headerMap)) {
+    throw Error('utils | getHtmlByPuppeteer | parameter "headerMap" should be "Object<String>"');
   }
   if (check.not.array.of.string(blockUrlList)) {
     throw Error('utils | getHtmlByPuppeteer | parameter "blockUrlList" should be "Array<String>"');
@@ -128,8 +128,8 @@ const getHtmlByPuppeteer = async ({ url, header = {}, blockUrlList = [], randomU
   const browser = await puppeteer.launch(browserOption);
   // page
   const page = (await browser.pages())[0] || await browser.newPage();
-  if (check.not.emptyObject(header)) {
-    await page.setExtraHTTPHeaders(header);
+  if (check.not.emptyObject(headerMap)) {
+    await page.setExtraHTTPHeaders(headerMap);
   }
   if (randomUserAgent) {
     await page.setUserAgent(getRandomUsarAgent());
@@ -160,7 +160,7 @@ const getHtmlByPuppeteer = async ({ url, header = {}, blockUrlList = [], randomU
     const file = 'get-html-by-puppeteer.html';
     console.log(`HTML content of "${url}" is saved to "${file}".`);
     fs.writeFileSync(file, html);
-    await sleep(10000);
+    await sleep(600000);
   }
   await browser.close();
   return html;

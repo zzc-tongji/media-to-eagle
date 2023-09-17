@@ -65,9 +65,10 @@ const main = async () => {
   };
   for (const url of urlList) {
     for (const key in handlerList) {
+      const k = key.replace('_', '.');
       const handler = handlerList[key];
       if (handler.getUrl(url)) {
-        const s = setting[key.replace('_', '.')] || {};
+        const s = setting[k] || {};
         let success = false;
         try {
           await handler.save({
@@ -75,9 +76,9 @@ const main = async () => {
             headerMap: s.headerMap || {},
             proxy: s.proxy || proxy || '',
           });
-          console.log(`${url} | ${key} | ok`);
+          console.log(`${url} | ${k} | ok`);
         } catch (error) {
-          console.error(`${url} | ${key} | ${error.message}`);
+          console.error(`${url} | ${error.message}`);
         }
         if (success) {
           await utils.sleep(s.interval || interval);
