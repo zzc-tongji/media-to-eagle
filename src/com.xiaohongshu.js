@@ -85,7 +85,6 @@ const save = async ({ textWithUrl, headerMap, proxy, debug }) => {
   if (!(note instanceof Object) || Object.keys(note) <= 0) {
     throw new Error(`com.xiaohongshu | note non-existent | url = ${url}`);
   }
-  // common
   if (
     typeof note?.user?.userId !== 'string' ||
     typeof note?.user?.nickname !== 'string' ||
@@ -97,9 +96,12 @@ const save = async ({ textWithUrl, headerMap, proxy, debug }) => {
   ) {
     throw new Error(`com.xiaohongshu | invalid note format | note = ${JSON.stringify(note)}`);
   }
-  const redIdList = (await Promise.all(
-    [ note.user, ...note.atUserList ].map(user => getRedIdFromUserId({ userId: user.userId, opt })),
-  ));
+  // get red id
+  note.user.redId = await getRedIdFromUserId({ userId: note.user.userId, opt });
+  for (const u of note.atUserList) {
+    u.redId = await getRedIdFromUserId({ userId: u.userId, opt });
+  }
+  // common
   const tagList = [
     `_login=${loggedIn}`,
     '_source=xiaohongshu.com',
@@ -112,13 +114,13 @@ const save = async ({ textWithUrl, headerMap, proxy, debug }) => {
   const annotation = {
     creator: {
       name: note.user.nickname,
-      red_id: redIdList[0],
+      red_id: note.user.redId,
     },
     title: note.title || undefined,
     description: note.desc || undefined,
     media_count: mediaCount,
-    at_user_list: note.atUserList.length > 0 ? note.atUserList.map((u, i) => {
-      return { name: u.nickname, red_id: redIdList[i] };
+    at_user_list: note.atUserList.length > 0 ? note.atUserList.map((u) => {
+      return { name: u.nickname, red_id: u.redId };
     }) : undefined,
   };
   // folder

@@ -260,13 +260,13 @@ const save = async ({ textWithUrl, headerMap, proxy, debug }) => {
     ...raw.html_tag_list.map(tag => `_union_tag=${tag}`),
   ];
   const atUserList = Object.values(atUserMap).map(({ fullName, userName }) => {
-    return { full_name: fullName, user_name: userName };
+    return { full_name: fullName, url_id: userName };
   });
   const mediaCount = singleImage ? 1 : raw.carousel_media.length;
   const annotation = {
     creator: {
       full_name: creator.fullName,
-      user_name: creator.userName,
+      url_id: creator.userName,
     },
     description: raw.description,
     media_count: mediaCount,
