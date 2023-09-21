@@ -6,6 +6,7 @@ import cheerio from 'cheerio';
 //
 import * as eagle from './eagle.js';
 import * as utils from './utils.js';
+
 const redIdMap = {};
 
 const getRedIdFromUserId = async ({ userId, opt }) => {
@@ -82,19 +83,29 @@ const save = async ({ textWithUrl, headerMap, proxy, debug }) => {
   const loggedIn = data?.user?.loggedIn || false;
   const id = data?.note?.firstNoteId || '';
   const note = data?.note?.noteDetailMap[id]?.note || null;
-  if (!(note instanceof Object) || Object.keys(note) <= 0) {
+  if (check.not.object(note) || check.emptyObject(note)) {
     throw new Error(`com.xiaohongshu | note non-existent | url = ${url}`);
   }
-  if (
-    typeof note?.user?.userId !== 'string' ||
-    typeof note?.user?.nickname !== 'string' ||
-    typeof note?.title !== 'string' ||
-    typeof note?.desc !== 'string' ||
-    typeof note?.time !== 'number' ||
-    (!(note.tagList instanceof Array)) ||
-    (!(note.atUserList instanceof Array))
-  ) {
-    throw new Error(`com.xiaohongshu | invalid note format | note = ${JSON.stringify(note)}`);
+  if (check.not.string(note?.user?.userId) || check.emptyString(note?.user?.userId)) {
+    throw new Error(`com.xiaohongshu | invalid note format | note?.user?.userId = ${JSON.stringify(note)}`);
+  }
+  if (check.not.string(note?.user?.nickname) || check.emptyString(note?.user?.nickname)) {
+    throw new Error(`com.xiaohongshu | invalid note format | note?.user?.nickname = ${JSON.stringify(note)}`);
+  }
+  if (check.not.string(note?.title)) {
+    throw new Error(`com.xiaohongshu | invalid note format | note?.title = ${JSON.stringify(note)}`);
+  }
+  if (check.not.string(note?.desc)) {
+    throw new Error(`com.xiaohongshu | invalid note format | note?.desc = ${JSON.stringify(note)}`);
+  }
+  if (check.not.number(note?.time)) {
+    throw new Error(`com.xiaohongshu | invalid note format | note?.time = ${JSON.stringify(note)}`);
+  }
+  if (check.not.array(note?.tagList)) {
+    throw new Error(`com.xiaohongshu | invalid note format | note?.tagList = ${JSON.stringify(note)}`);
+  }
+  if (check.not.array(note?.atUserList)) {
+    throw new Error(`com.xiaohongshu | invalid note format | note?.atUserList = ${JSON.stringify(note)}`);
   }
   // get red id
   note.user.redId = await getRedIdFromUserId({ userId: note.user.userId, opt });
@@ -128,7 +139,7 @@ const save = async ({ textWithUrl, headerMap, proxy, debug }) => {
   const folder = await utils.createEagleFolder({
     parentName: '.xiaohongshu.com',
     name: id,
-    summary: note.title || note.desc.split('\n')[0],
+    summary: note.title || note.desc.split('\n')[0] || undefined,
     mediaCount,
     source: `${eagle.generateTitle(note.time)}`,
     url: website,
@@ -167,17 +178,17 @@ const save = async ({ textWithUrl, headerMap, proxy, debug }) => {
     folderId: folder.id,
   };
   // video
-  if (note.video) {
+  if (check.object(note?.video)) {
     const video = [
       note?.video?.media?.stream?.h264 || [],
       note?.video?.media?.stream?.h265 || [],
       note?.video?.media?.stream?.av1 || [],
     ].filter(v => v.length > 0)?.['0']?.['0'] || null;
-    if (!video) {
-      throw new Error(`com.xiaohongshu | invalid note format | note.video = ${JSON.stringify(note)}`);
+    if (check.not.object(video)) {
+      throw new Error(`com.xiaohongshu | invalid note format | note?.video = ${JSON.stringify(note?.video)}`);
     }
-    if (typeof video.masterUrl != 'string') {
-      throw new Error(`com.xiaohongshu | invalid note format | video = ${JSON.stringify(video)}`);
+    if (check.not.string(video?.masterUrl) || !utils.urlRegex.test(video?.masterUrl)) {
+      throw new Error(`com.xiaohongshu | invalid note format | note?.video?.masterUrl = ${JSON.stringify(video)}`);
     }
     payload.items.push({
       url: video.masterUrl,

@@ -8,7 +8,7 @@ import * as eagle from './eagle.js';
 import * as utils from './utils.js';
 
 const searchObjectWithKeyValue = (full, key, value) => {
-  if (!(full instanceof Object)) {
+  if (check.not.object(full) && check.not.array(full)) {
     return null;
   }
   for (const k of Object.keys(full)) {
@@ -38,7 +38,7 @@ const getUserFromUserName = async ({ userName, opt }) => {
   fs.writeFileSync('1.htm', html);
   const title = $('head>meta[property="og:title"]')?.attr('content') || '';
   const temp = /^(.*)\(@(.*)\)(.*)$/.exec(title);
-  if (!temp) {
+  if (check.not.array(temp)) {
     throw new Error(`com.instagram | invalid user format | title = ${title}`);
   }
   const user = {
@@ -75,12 +75,13 @@ const getUrl = (textWithUrl = '') => {
   if (!valid) {
     return '';
   }
+  url = url.replace('/instagram.com/', '/www.instagram.com/');
   url = url.split('?')[0];
   url = url.split('#')[0];
   return url;
 };
 
-const save = async ({ textWithUrl, headerMap, proxy, debug }) => {
+const save = async ({ textWithUrl, headerMap, proxy, debug, keepBrowserMs }) => {
   // get note url
   const inputUrl = getUrl(textWithUrl);
   if (check.emptyString(inputUrl)) {
@@ -108,6 +109,7 @@ const save = async ({ textWithUrl, headerMap, proxy, debug }) => {
   if (debug) {
     opt.debug = true;
   }
+  opt.keepBrowserMs = keepBrowserMs;
   //
   const html = await utils.getHtmlByPuppeteer({ ...opt, url: inputUrl });
   // get raw data of post (1)
@@ -248,8 +250,8 @@ const save = async ({ textWithUrl, headerMap, proxy, debug }) => {
       raw.html_tag_list.push(item.split('#').pop());
     }
   }
-  const descriptionReges = /"([\s\S]*)"/.exec($('head>meta[property="og:title"]')?.attr('content') || '""');
-  raw.description = descriptionReges ? descriptionReges[1] : '';
+  const descriptionRegex = /"([\s\S]*)"/.exec($('head>meta[property="og:title"]')?.attr('content') || '""');
+  raw.description = descriptionRegex ? descriptionRegex[1] : undefined;
   // common
   const tagList = [
     `_login=${loggedIn}`,

@@ -17,9 +17,6 @@ const createEagleFolder = async ({ parentName, name, summary, mediaCount, source
   if (check.not.string(name) || check.emptyString(name)) {
     throw Error('utils | createEagleFolder | parameter "name" should be non-empty "string"');
   }
-  if (check.not.string(summary) || check.emptyString(summary)) {
-    throw Error('utils | createEagleFolder | parameter "summary" should be non-empty "string"');
-  }
   if (check.not.number(mediaCount)) {
     throw Error('utils | createEagleFolder | parameter "mediaCount" should be "number"');
   }
@@ -33,15 +30,18 @@ const createEagleFolder = async ({ parentName, name, summary, mediaCount, source
   await eagle.updateFolder({ name: parentName, parentName: '.import' });
   return await eagle.updateFolder({
     name,
-    parentName: '.xiaohongshu.com',
+    parentName,
     description: JSON.stringify({ summary, media_count: mediaCount, source, url }),
   });
 };
 
-const formatDateTime = (input, style = 0) => {
+const formatDateTime = (input, style) => {
   // format as 'yyyyMMdd_HHmmss_SSS'
+  if (check.not.number(style)) {
+    style = 0;
+  }
   let dateTime;
-  if (typeof input == 'number' || typeof input == 'string') {
+  if (check.number(input) || check.string(input)) {
     dateTime = new Date(input);
   } else if (input instanceof Date) {
     dateTime = input;
@@ -123,7 +123,7 @@ const getHtml = async ({ url, fetchOption = {}, randomUserAgent = true, proxy = 
   return html;
 };
 
-const getHtmlByPuppeteer = async ({ url, headerMap = {}, blockUrlList = [], randomUserAgent = true, proxy = '', timeoutMs = 60000, debug = false }) => {
+const getHtmlByPuppeteer = async ({ url, headerMap = {}, blockUrlList = [], randomUserAgent = true, proxy = '', timeoutMs = 60000, debug = false, keepBrowserMs = 10000 }) => {
   // parameter
   if (check.not.string(url) || !urlRegex.exec(url)) {
     throw Error('utils | getHtmlByPuppeteer | parameter "url" should be "string" of valid url');
@@ -145,6 +145,9 @@ const getHtmlByPuppeteer = async ({ url, headerMap = {}, blockUrlList = [], rand
   }
   if (check.not.boolean(debug)) {
     throw Error('utils | getHtmlByPuppeteer | parameter "debug" should be "bool"');
+  }
+  if (check.not.greaterOrEqual(keepBrowserMs, 10000)) {
+    throw Error('utils | getHtmlByPuppeteer | parameter "keepBrowserMs" should be "number" greator than 10000');
   }
   // brower
   const browserOption = {
@@ -191,7 +194,7 @@ const getHtmlByPuppeteer = async ({ url, headerMap = {}, blockUrlList = [], rand
     const file = 'get-html-by-puppeteer.html';
     console.log(`HTML content of "${url}" is saved to "${file}".`);
     fs.writeFileSync(file, html);
-    await sleep(10000);
+    await sleep(keepBrowserMs);
   }
   await browser.close();
   return html;

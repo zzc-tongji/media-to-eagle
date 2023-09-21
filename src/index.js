@@ -21,6 +21,7 @@ const main = async () => {
   parser.add_argument('--proxy', '-p', { help: 'proxy server' });
   parser.add_argument('--interval', '-i', { help: 'wait time (ms) after fetching' });
   parser.add_argument('--debug', '-d', { help: 'debug mode' });
+  parser.add_argument('--browser', '-b', { help: 'time (ms) of keeping browser open, only available when "--debug=true"' });
   const argv = parser.parse_args();
   // url list
   const urlList = [];
@@ -55,6 +56,10 @@ const main = async () => {
   const minimalInterval = 3000;
   const i = parseInt(argv.interval);
   const interval = i > minimalInterval ? i : minimalInterval;
+  // keep browser
+  const minimalBrowser = 10000;
+  const b = parseInt(argv.browser);
+  const browser = b > minimalBrowser ? b : minimalBrowser;
   //
   // handle url
   //
@@ -75,6 +80,7 @@ const main = async () => {
             headerMap: s.headerMap || {},
             proxy: s.proxy || proxy || '',
             debug: argv.debug ? true : false,
+            keepBrowserMs: browser,
           });
           console.log(`${url} | ${message}`);
         } catch (error) {
