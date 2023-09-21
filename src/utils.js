@@ -1,11 +1,42 @@
+import fs from 'node:fs';
+//
 import check from 'check-types';
-import fs from 'fs';
 import fetch from 'node-fetch';
 import { HttpsProxyAgent } from 'https-proxy-agent';
 import puppeteer from 'puppeteer';
 import randomUseragent from 'random-useragent';
+//
+import * as eagle from './eagle.js';
 
 const urlRegex = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*)/;
+
+const createEagleFolder = async ({ parentName, name, summary, mediaCount, source, url }) => {
+  if (check.not.string(parentName) || check.emptyString(parentName)) {
+    throw Error('utils | createEagleFolder | parameter "parentName" should be non-empty "string"');
+  }
+  if (check.not.string(name) || check.emptyString(name)) {
+    throw Error('utils | createEagleFolder | parameter "name" should be non-empty "string"');
+  }
+  if (check.not.string(summary) || check.emptyString(summary)) {
+    throw Error('utils | createEagleFolder | parameter "summary" should be non-empty "string"');
+  }
+  if (check.not.number(mediaCount)) {
+    throw Error('utils | createEagleFolder | parameter "mediaCount" should be "number"');
+  }
+  if (check.not.string(source) || check.emptyString(source)) {
+    throw Error('utils | createEagleFolder | parameter "source" should be non-empty "string"');
+  }
+  if (check.not.string(url) || !urlRegex.test(url)) {
+    throw Error('utils | createEagleFolder | parameter "url" should be url "string"');
+  }
+  await eagle.updateFolder({ name: '.import' });
+  await eagle.updateFolder({ name: parentName, parentName: '.import' });
+  return await eagle.updateFolder({
+    name,
+    parentName: '.xiaohongshu.com',
+    description: JSON.stringify({ summary, media_count: mediaCount, source, url }),
+  });
+};
 
 const formatDateTime = (input, style = 0) => {
   // format as 'yyyyMMdd_HHmmss_SSS'
@@ -196,4 +227,4 @@ const sleep = (ms) => {
   });
 };
 
-export { urlRegex, getHtml, getHtmlByPuppeteer, formatDateTime, sleep };
+export { urlRegex, createEagleFolder, getHtml, getHtmlByPuppeteer, formatDateTime, sleep };

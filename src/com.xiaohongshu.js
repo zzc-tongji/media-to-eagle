@@ -124,15 +124,16 @@ const save = async ({ textWithUrl, headerMap, proxy, debug }) => {
     }) : undefined,
   };
   // folder
-  await eagle.updateFolder({ name: '.import' });
-  await eagle.updateFolder({ name: '.xiaohongshu.com', parentName: '.import' });
-  const folder = await eagle.updateFolder({
-    name: id,
+  const website = `https://www.xiaohongshu.com/explore/${id}`;
+  const folder = await utils.createEagleFolder({
     parentName: '.xiaohongshu.com',
-    description: JSON.stringify({ media_count: mediaCount, name: note.title || note.desc.split('\n')[0] }),
+    name: id,
+    summary: note.title || note.desc.split('\n')[0],
+    mediaCount,
+    source: `${eagle.generateTitle(note.time)}`,
+    url: website,
   });
   // meta
-  const website = `https://www.xiaohongshu.com/explore/${id}`;
   const metaFile = `com.xiaohongshu.${id}.json`;
   fs.writeFileSync(metaFile, JSON.stringify(note, null, 2));
   await eagle.post('/api/item/addFromPaths', {
@@ -175,17 +176,14 @@ const save = async ({ textWithUrl, headerMap, proxy, debug }) => {
     if (!video) {
       throw new Error(`com.xiaohongshu | invalid note format | note.video = ${JSON.stringify(note)}`);
     }
-    if (
-      typeof video.masterUrl != 'string' ||
-      !(video.backupUrls instanceof Array)
-    ) {
+    if (typeof video.masterUrl != 'string') {
       throw new Error(`com.xiaohongshu | invalid note format | video = ${JSON.stringify(video)}`);
     }
     payload.items.push({
       url: video.masterUrl,
       name: `${eagle.generateTitle(note.time + 1 + payload.items.length)}`,
-      website: `https://www.xiaohongshu.com/explore/${id}`,
-      annotation: JSON.stringify({ ...annotation, media_url_list: [ video.masterUrl, ...video.backupUrls ] }),
+      website,
+      annotation: JSON.stringify({ ...annotation, media_url: video.masterUrl }),
       tags: tagList,
     });
   }

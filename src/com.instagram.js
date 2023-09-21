@@ -273,12 +273,13 @@ const save = async ({ textWithUrl, headerMap, proxy, debug }) => {
     at_user_list: atUserList.length > 0 ? atUserList : undefined,
   };
   // folder
-  await eagle.updateFolder({ name: '.import' });
-  await eagle.updateFolder({ name: '.instagram.com', parentName: '.import' });
-  const folder = await eagle.updateFolder({
-    name: raw.code,
+  const folder = await utils.createEagleFolder({
     parentName: '.instagram.com',
-    description: JSON.stringify({ media_count: mediaCount, name: raw.description }),
+    name: raw.code,
+    summary: raw.description,
+    mediaCount,
+    source: `${eagle.generateTitle(raw.taken_at * 1000)}`,
+    url,
   });
   // meta
   const metaFile = `com.instagram.${code}.json`;
