@@ -36,7 +36,7 @@ const main = async () => {
         return check.not.emptyString(url) && !url.startsWith('#') && !url.startsWith(';') && !url.startsWith('//');
       }));
     } catch {
-      console.error(`invalid parameter | --list="${argv.list}" | no such text file`);
+      console.log(`invalid parameter | --list="${argv.list}" | no such text file`);
       return 1;
     }
   }
@@ -46,7 +46,7 @@ const main = async () => {
     try {
       setting = JSON.parse(fs.readFileSync(argv.setting, { encoding: 'utf-8' }));
     } catch (error) {
-      console.error(`invalid parameter | --setting="${argv.setting}" | ${error.message}`);
+      console.log(`invalid parameter | --setting="${argv.setting}" | ${error.message}`);
       return 1;
     }
   }
@@ -84,7 +84,7 @@ const main = async () => {
           });
           console.log(`${url} | ${message}`);
         } catch (error) {
-          console.error(`${url} | ${error.message}`);
+          console.log(`${url} | ${error.message}`);
         }
         if (success) {
           await utils.sleep(s.interval || interval);
