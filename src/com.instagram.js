@@ -9,19 +9,20 @@ import * as utils from './utils.js';
 
 const searchObjectWithKeyValue = (full, key, value) => {
   if (check.not.object(full) && check.not.array(full)) {
-    return null;
+    return [];
   }
+  const result = [];
   for (const k of Object.keys(full)) {
     const v = full[k];
     if (k === key && v === value) {
-      return full;
+      result.push(full);
     }
     const res = searchObjectWithKeyValue(v, key, value);
     if (res) {
-      return res;
+      result.push(...res);
     }
   }
-  return null;
+  return result;
 };
 
 const userNameMap = {};
@@ -55,7 +56,7 @@ const getUserFromUserName = async ({ userName, opt }) => {
   }).map((s) => {
     return JSON.parse(s);
   });
-  user.userId = searchObjectWithKeyValue(full, 'content_type', 'PROFILE').target_id;
+  user.userId = searchObjectWithKeyValue(full, 'content_type', 'PROFILE')[0].target_id;
   // cache set
   userNameMap[userName] = user;
   return user;
@@ -129,19 +130,22 @@ const save = async ({ textWithUrl, headerMap, proxy, debug, keepBrowserMs }) => 
   }).map((s) => {
     return JSON.parse(s);
   });
-  const rawLogin = searchObjectWithKeyValue(full, '0', 'XIGSharedData');
   let loggedIn = false;
-  if (check.array(rawLogin) && rawLogin.length > 2 && check.string(rawLogin[2].raw)) {
-    try {
-      loggedIn = check.object(JSON.parse(rawLogin[2].raw)?.config?.viewer || null);
-    } catch {
-      //
+  let rawLogin = searchObjectWithKeyValue(full, '0', 'XIGSharedData');
+  if (check.not.emptyArray(rawLogin.length)) {
+    rawLogin = rawLogin[0];
+    if (check.array(rawLogin) && rawLogin.length > 2 && check.string(rawLogin[2].raw)) {
+      try {
+        loggedIn = check.object(JSON.parse(rawLogin[2].raw)?.config?.viewer || null);
+      } catch {
+        //
+      }
     }
   }
   if (!loggedIn) {
     throw Error(`com.instagram | login required | headerMap.cookie = ${headerMap.cookie}`);
   }
-  const raw = searchObjectWithKeyValue(full, 'code', code);
+  const raw = searchObjectWithKeyValue(full, 'code', code).find(r => check.number(r.taken_at));
   // validate data
   if (check.not.object(raw)) {
     throw new Error(`com.instagram | invalid post format | raw = ${raw}`);
