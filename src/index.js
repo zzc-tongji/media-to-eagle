@@ -30,7 +30,7 @@ const main = async () => {
   }
   if (argv.list) {
     try {
-      urlList.push(...fs.readFileSync(argv.list, { encoding: 'utf-8' }).split(/\r?\n/).map((url) => {
+      urlList.push(...fs.readFileSync(argv.list, { encoding: 'utf-8' }).split(/\r?\n|\s/).map((url) => {
         return url.trim();
       }).filter((url) => {
         return check.not.emptyString(url) && !url.startsWith('#') && !url.startsWith(';') && !url.startsWith('//');
