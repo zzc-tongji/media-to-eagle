@@ -1,6 +1,7 @@
 import check from 'check-types';
 import fetch from 'node-fetch';
 //
+import * as setting from './setting.js';
 import * as utils from './utils.js';
 
 // tool
@@ -11,10 +12,14 @@ const generateTitle = (input) => {
 
 // API
 
-const host = 'http://localhost:41595';
-const token = 'fcf9d2cf-b484-43ca-a1cc-2e71223f9ed1';
+let eagleConfig = {};
+
+const init = () => {
+  eagleConfig = setting.get().eagle;
+};
 
 const get = (path) => {
+  const { host } = eagleConfig;
   if (check.not.string(path) || check.emptyString(path)) {
     throw Error('eagle | get | parameter "path" should be non-empty "string"');
   }
@@ -32,6 +37,7 @@ const get = (path) => {
 };
 
 const post = (path, payload) => {
+  const { host, token } = eagleConfig;
   if (check.not.string(path) || check.emptyString(path)) {
     throw Error('eagle | post | parameter "path" should be non-empty "string"');
   }
@@ -107,4 +113,4 @@ const updateFolder = async ({ name, parentName = '', description = '' }) => {
   return folder;
 };
 
-export { generateTitle, get, post, updateFolder };
+export { generateTitle, init, get, post, updateFolder };

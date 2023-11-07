@@ -41,6 +41,10 @@
       "error",
       2
     ],
+    "key-spacing": [
+      "error",
+      { "afterColon": true }
+    ],
     "linebreak-style": [
       "error",
       "unix"

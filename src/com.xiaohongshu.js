@@ -5,9 +5,22 @@ import check from 'check-types';
 import cheerio from 'cheerio';
 //
 import * as eagle from './eagle.js';
+import * as setting from './setting.js';
 import * as utils from './utils.js';
 
+let allConfig = {};
+let siteConfig = {
+  headerMap: {
+    'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36',
+  },
+  interval: 3000,
+};
+//
 const redIdMap = {};
+const init = () => {
+  allConfig = setting.get();
+  siteConfig = allConfig.site['com.xiaohongshu'];
+};
 
 const getRedIdFromUserId = async ({ userId, opt }) => {
   // cache get
@@ -48,7 +61,7 @@ const getUrl = (textWithUrl = '') => {
   return url;
 };
 
-const save = async ({ textWithUrl, headerMap, proxy, debug }) => {
+const save = async ({ textWithUrl }) => {
   // get note url
   const url = getUrl(textWithUrl);
   if (check.emptyString(url)) {
@@ -57,20 +70,20 @@ const save = async ({ textWithUrl, headerMap, proxy, debug }) => {
   // parse data
   const opt = {};
   opt.timeoutMs = 10000;
-  if (check.string(proxy)) {
-    opt.proxy = proxy;
+  if (check.string(siteConfig.proxy)) {
+    opt.proxy = siteConfig.proxy;
   }
   opt.fetchOption = {};
-  if (check.object(headerMap)) {
-    opt.fetchOption.headers = headerMap;
+  if (check.object(siteConfig.headerMap)) {
+    opt.fetchOption.headers = siteConfig.headerMap;
   }
   if (
-    (check.string(headerMap['User-Agent']) && check.not.emptyArray(headerMap['User-Agent'])) ||
-    (check.string(headerMap['user-agent']) && check.not.emptyArray(headerMap['user-agent']))
+    (check.string(siteConfig.headerMap['User-Agent']) && check.not.emptyArray(siteConfig.headerMap['User-Agent'])) ||
+    (check.string(siteConfig.headerMap['user-agent']) && check.not.emptyArray(siteConfig.headerMap['user-agent']))
   ) {
     opt.randomUserAgent = false;
   }
-  if (debug) {
+  if (allConfig.debug.enable) {
     opt.debug = true;
   }
   //
@@ -145,22 +158,40 @@ const save = async ({ textWithUrl, headerMap, proxy, debug }) => {
     url: website,
   });
   // meta
-  const metaFile = `com.xiaohongshu.${id}.json`;
+  const metaFile = `com.xiaohongshu.${id}.txt`;
   fs.writeFileSync(metaFile, JSON.stringify(note, null, 2));
-  await eagle.post('/api/item/addFromPaths', {
-    items: [
-      {
-        path: path.resolve(metaFile),
-        name: `${eagle.generateTitle(note.time)}`,
-        website,
-        tags: tagList,
-        annotation: JSON.stringify(annotation),
-      },
-    ],
-    folderId: folder.id,
-  });
-  await utils.sleep(1000);
-  if (!debug) {
+  if (check.not.string(allConfig.eagle.stage) || check.emptyString(allConfig.eagle.stage) || !utils.urlRegex.test(allConfig.eagle.stage)) {
+    // local
+    await eagle.post('/api/item/addFromPaths', {
+      items: [
+        {
+          path: path.resolve(metaFile),
+          name: `${eagle.generateTitle(note.time)}`,
+          website,
+          tags: tagList,
+          annotation: JSON.stringify(annotation),
+        },
+      ],
+      folderId: folder.id,
+    });
+    await utils.sleep(1000);
+  } else {
+    // http upload and download via stage
+    await utils.uploadViaHttp({ filePath: metaFile, url: allConfig.eagle.stage });
+    await eagle.post('/api/item/addFromURLs', {
+      items: [
+        {
+          url: `${allConfig.eagle.stage}/${metaFile}`,
+          name: `${eagle.generateTitle(note.time)}`,
+          website,
+          tags: tagList,
+          annotation: JSON.stringify(annotation),
+        },
+      ],
+      folderId: folder.id,
+    });
+  }
+  if (!allConfig.debug.enable) {
     fs.unlinkSync(metaFile);
   }
   // image
@@ -200,7 +231,10 @@ const save = async ({ textWithUrl, headerMap, proxy, debug }) => {
   }
   // add to eagle
   await eagle.post('/api/item/addFromURLs', payload);
+  // interval
+  await utils.sleep(siteConfig.interval);
+  //
   return `com.xiaohongshu | ok${loggedIn ? ' | login' : ''}`;
 };
 
-export { getUrl, save };
+export { init, getUrl, save };

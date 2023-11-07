@@ -5,7 +5,23 @@ import check from 'check-types';
 import cheerio from 'cheerio';
 //
 import * as eagle from './eagle.js';
+import * as setting from './setting.js';
 import * as utils from './utils.js';
+
+let allConfig = {};
+let siteConfig = {
+  headerMap: {
+    'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36',
+  },
+  interval: 10000,
+};
+//
+const userNameMap = {};
+
+const init = () => {
+  allConfig = setting.get();
+  siteConfig = allConfig.site['com.instagram'];
+};
 
 const searchObjectWithKeyValue = (full, key, value) => {
   if (check.not.object(full) && check.not.array(full)) {
@@ -24,8 +40,6 @@ const searchObjectWithKeyValue = (full, key, value) => {
   }
   return result;
 };
-
-const userNameMap = {};
 
 const getUserFromUserName = async ({ userName, opt }) => {
   // cache get
@@ -82,7 +96,7 @@ const getUrl = (textWithUrl = '') => {
   return url;
 };
 
-const save = async ({ textWithUrl, headerMap, proxy, debug, keepBrowserMs }) => {
+const save = async ({ textWithUrl }) => {
   // get note url
   const inputUrl = getUrl(textWithUrl);
   if (check.emptyString(inputUrl)) {
@@ -91,15 +105,15 @@ const save = async ({ textWithUrl, headerMap, proxy, debug, keepBrowserMs }) => 
   // parse data
   const opt = {};
   opt.timeoutMs = 60000;
-  if (check.string(proxy)) {
-    opt.proxy = proxy;
+  if (check.string(siteConfig.proxy)) {
+    opt.proxy = siteConfig.proxy;
   }
-  if (check.object(headerMap)) {
-    opt.headerMap = headerMap;
+  if (check.object(siteConfig.headerMap)) {
+    opt.headerMap = siteConfig.headerMap;
   }
   if (
-    (check.string(headerMap['User-Agent']) && check.not.emptyArray(headerMap['User-Agent'])) ||
-    (check.string(headerMap['user-agent']) && check.not.emptyArray(headerMap['user-agent']))
+    (check.string(siteConfig.headerMap['User-Agent']) && check.not.emptyArray(siteConfig.headerMap['User-Agent'])) ||
+    (check.string(siteConfig.headerMap['user-agent']) && check.not.emptyArray(siteConfig.headerMap['user-agent']))
   ) {
     opt.randomUserAgent = false;
   }
@@ -107,10 +121,10 @@ const save = async ({ textWithUrl, headerMap, proxy, debug, keepBrowserMs }) => 
     'https://edge-chat.instagram.com/',
     'https://www.facebook.com/',
   ];
-  if (debug) {
+  if (allConfig.debug.enable) {
     opt.debug = true;
   }
-  opt.keepBrowserMs = keepBrowserMs;
+  opt.keepBrowserMs = allConfig.debug.keepBrowserMs;
   //
   const html = await utils.getHtmlByPuppeteer({ ...opt, url: inputUrl });
   // get raw data of post (1)
@@ -143,7 +157,7 @@ const save = async ({ textWithUrl, headerMap, proxy, debug, keepBrowserMs }) => 
     }
   }
   if (!loggedIn) {
-    throw Error(`com.instagram | login required | headerMap.cookie = ${headerMap.cookie}`);
+    throw Error(`com.instagram | login required | headerMap.cookie = ${siteConfig.headerMap.cookie}`);
   }
   const raw = searchObjectWithKeyValue(full, 'code', code).find(r => check.number(r.taken_at));
   // validate data
@@ -290,16 +304,38 @@ const save = async ({ textWithUrl, headerMap, proxy, debug, keepBrowserMs }) => 
   // meta
   const metaFile = `com.instagram.${code}.json`;
   fs.writeFileSync(metaFile, JSON.stringify(raw, null, 2));
-  await eagle.post('/api/item/addFromPath', {
-    path: path.resolve(metaFile),
-    name: `${eagle.generateTitle(raw.taken_at * 1000)}`,
-    website: url,
-    tags: tagList,
-    annotation: JSON.stringify(annotation),
-    folderId: folder.id,
-  });
-  await utils.sleep(1000);
-  if (!debug) {
+  if (check.not.string(allConfig.eagle.stage) || check.emptyString(allConfig.eagle.stage) || !utils.urlRegex.test(allConfig.eagle.stage)) {
+    // local
+    await eagle.post('/api/item/addFromPaths', {
+      items: [
+        {
+          path: path.resolve(metaFile),
+          name: `${eagle.generateTitle(raw.taken_at * 1000)}`,
+          website: url,
+          tags: tagList,
+          annotation: JSON.stringify(annotation),
+        },
+      ],
+      folderId: folder.id,
+    });
+    await utils.sleep(1000);
+  } else {
+    // http upload and download via stage
+    await utils.uploadViaHttp({ filePath: metaFile, url: allConfig.eagle.stage });
+    await eagle.post('/api/item/addFromURLs', {
+      items: [
+        {
+          url: `${allConfig.eagle.stage}/${metaFile}`,
+          name: `${eagle.generateTitle(raw.taken_at * 1000)}`,
+          website: url,
+          tags: tagList,
+          annotation: JSON.stringify(annotation),
+        },
+      ],
+      folderId: folder.id,
+    });
+  }
+  if (!allConfig.debug.enable) {
     fs.unlinkSync(metaFile);
   }
   // image
@@ -348,7 +384,10 @@ const save = async ({ textWithUrl, headerMap, proxy, debug, keepBrowserMs }) => 
     }
   }
   await eagle.post('/api/item/addFromURLs', payload);
+  // interval
+  await utils.sleep(siteConfig.interval);
+  //
   return `com.instagram | ok${loggedIn ? ' | login' : ''}`;
 };
 
-export { getUrl, save };
+export { init, getUrl, save };

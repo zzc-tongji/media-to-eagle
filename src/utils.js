@@ -1,7 +1,8 @@
 import fs from 'node:fs';
+import path from 'node:path';
 //
 import check from 'check-types';
-import fetch from 'node-fetch';
+import fetch, { FormData, Blob } from 'node-fetch';
 import { HttpsProxyAgent } from 'https-proxy-agent';
 import puppeteer from 'puppeteer';
 import randomUseragent from 'random-useragent';
@@ -105,7 +106,7 @@ const getHtml = async ({ url, fetchOption = {}, randomUserAgent = true, proxy = 
         throw new Error(`utils | getHtml | fetch ${url} | network issue | ${error.message}`);
       })
       .then((response) => {
-        if (response.status <= 199 || response.status > 400) {
+        if (response.status <= 199 || response.status >= 400) {
           throw new Error(`utils | getHtml | fetch ${url} | incorrect http status code | response.status = ${response.status}`);
         }
         return response.text();
@@ -230,4 +231,21 @@ const sleep = (ms) => {
   });
 };
 
-export { urlRegex, createEagleFolder, getHtml, getHtmlByPuppeteer, formatDateTime, sleep };
+const uploadViaHttp = ({ filePath, url }) => {
+  const formData = new FormData();
+  formData.append('file', new Blob([ fs.readFileSync(filePath) ]), path.basename(filePath));
+  const text = fetch(url, {
+    method: 'POST',
+    body: formData,
+  }).catch((error) => {
+    throw new Error(`utils | uploadViaHttp | fetch ${url} | network issue | ${error.message}`);
+  }).then((response) => {
+    if (response.status <= 199 || response.status >= 400) {
+      throw new Error(`utils | uploadViaHttp | fetch ${url} | incorrect http status code | response.status = ${response.status}`);
+    }
+    return response.text();
+  });
+  return text;
+};
+
+export { urlRegex, createEagleFolder, getHtml, getHtmlByPuppeteer, formatDateTime, sleep, uploadViaHttp };
