@@ -1,6 +1,2 @@
-.nomedia
-.ttxfolder
+*.txt
 /node_modules
-list.txt
-list.log.txt
-setting.json

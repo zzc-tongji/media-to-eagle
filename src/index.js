@@ -20,7 +20,7 @@ const main = async () => {
   parser.add_argument('--list', '-l', { help: 'url list for fetching, splitted by linebreak' });
   parser.add_argument('--setting', '-s', { help: 'setting for fetching', required: true });
   parser.add_argument('--debug', '-d', { help: 'debug mode', default: 'true' });
-  parser.add_argument('--browser', '-b', { help: 'time (ms) of keeping browser open, only available when "--debug=true"', default: '10000' });
+  parser.add_argument('--browser', '-b', { help: 'time (ms) of keeping browser open, only available when "--debug=true"', default: '' });
   const argv = parser.parse_args();
   // url list
   const urlList = [];
@@ -29,7 +29,7 @@ const main = async () => {
   }
   if (argv.list) {
     try {
-      urlList.push(...fs.readFileSync(argv.list, { encoding: 'utf-8' }).split(/\r?\n|\siteConfig/).map((url) => {
+      urlList.push(...fs.readFileSync(argv.list, { encoding: 'utf-8' }).split(/\r?\n|\s/).map((url) => {
         return url.trim();
       }).filter((url) => {
         return check.not.emptyString(url) && !url.startsWith('#') && !url.startsWith(';') && !url.startsWith('//');
