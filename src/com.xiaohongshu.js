@@ -197,7 +197,7 @@ const save = async ({ textWithUrl }) => {
   // image
   const payload = {
     items: note.imageList.map((image, idx) => {
-      const mediaUrl = (loggedIn ? image.infoList.find(info => info.imageScene === 'CRD_WM_JPG').url : image.url).replace('\\u002F', '/');
+      const mediaUrl = image.urlDefault.replace('\\u002F', '/');
       return {
         url: mediaUrl,
         name: `${eagle.generateTitle(note.time + 1 + idx)}`,
@@ -234,7 +234,7 @@ const save = async ({ textWithUrl }) => {
   // interval
   await utils.sleep(siteConfig.interval);
   //
-  return `com.xiaohongshu | ok${loggedIn ? ' | login' : ''}`;
+  return `com.xiaohongshu | ok${loggedIn ? ' | login' : ' | non-login'}`;
 };
 
 export { init, getUrl, save };
