@@ -97,28 +97,28 @@ const save = async ({ textWithUrl }) => {
   const id = data?.note?.firstNoteId || '';
   const note = data?.note?.noteDetailMap[id]?.note || null;
   if (check.not.object(note) || check.emptyObject(note)) {
-    throw new Error(`com.xiaohongshu | note non-existent | url = ${url}`);
+    throw new Error(`com.xiaohongshu | note non-existent OR human verification | url = ${url}`);
   }
   if (check.not.string(note?.user?.userId) || check.emptyString(note?.user?.userId)) {
-    throw new Error(`com.xiaohongshu | invalid note format | note?.user?.userId = ${JSON.stringify(note)}`);
+    throw new Error(`com.xiaohongshu | invalid note format | note?.user?.userId | ${JSON.stringify(note)}`);
   }
   if (check.not.string(note?.user?.nickname) || check.emptyString(note?.user?.nickname)) {
-    throw new Error(`com.xiaohongshu | invalid note format | note?.user?.nickname = ${JSON.stringify(note)}`);
+    throw new Error(`com.xiaohongshu | invalid note format | note?.user?.nickname | ${JSON.stringify(note)}`);
   }
   if (check.not.string(note?.title)) {
-    throw new Error(`com.xiaohongshu | invalid note format | note?.title = ${JSON.stringify(note)}`);
+    throw new Error(`com.xiaohongshu | invalid note format | note?.title | ${JSON.stringify(note)}`);
   }
   if (check.not.string(note?.desc)) {
-    throw new Error(`com.xiaohongshu | invalid note format | note?.desc = ${JSON.stringify(note)}`);
+    throw new Error(`com.xiaohongshu | invalid note format | note?.desc | ${JSON.stringify(note)}`);
   }
   if (check.not.number(note?.time)) {
-    throw new Error(`com.xiaohongshu | invalid note format | note?.time = ${JSON.stringify(note)}`);
+    throw new Error(`com.xiaohongshu | invalid note format | note?.time | ${JSON.stringify(note)}`);
   }
   if (check.not.array(note?.tagList)) {
-    throw new Error(`com.xiaohongshu | invalid note format | note?.tagList = ${JSON.stringify(note)}`);
+    throw new Error(`com.xiaohongshu | invalid note format | note?.tagList | ${JSON.stringify(note)}`);
   }
   if (check.not.array(note?.atUserList)) {
-    throw new Error(`com.xiaohongshu | invalid note format | note?.atUserList = ${JSON.stringify(note)}`);
+    throw new Error(`com.xiaohongshu | invalid note format | note?.atUserList | ${JSON.stringify(note)}`);
   }
   // get red id
   note.user.redId = await getRedIdFromUserId({ userId: note.user.userId, opt });
