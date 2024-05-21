@@ -302,7 +302,7 @@ const save = async ({ textWithUrl }) => {
     url,
   });
   // meta
-  const metaFile = `com.instagram.${code}.json`;
+  const metaFile = `com.instagram.${code}.meta.json`;
   fs.writeFileSync(metaFile, JSON.stringify(raw, null, 2));
   if (check.not.string(allConfig.eagle.stage) || check.emptyString(allConfig.eagle.stage) || !utils.urlRegex.test(allConfig.eagle.stage)) {
     // local
