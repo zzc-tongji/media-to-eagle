@@ -55,9 +55,14 @@ const post = (path, payload) => {
     throw new Error('eagle | not running');
   }).then((response) => {
     if (!response.ok) {
-      throw new Error(`eagle | invalid payload | payload = ${JSON.stringify(payload)}`);
+      return response.text();
     }
     return response.json();
+  }).then((data) => {
+    if (typeof data === 'string') {
+      throw new Error(`eagle | invalid payload | payload = ${JSON.stringify(payload)} | response = ${data}`);
+    }
+    return data;
   });
 };
 

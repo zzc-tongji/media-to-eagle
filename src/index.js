@@ -1,4 +1,5 @@
 import * as fs from 'node:fs';
+import * as path from 'node:path';
 import 'node:readline';
 //
 import { ArgumentParser } from 'argparse';
@@ -17,9 +18,10 @@ const main = async () => {
     description: 'Media to Eagle',
   });
   parser.add_argument('--url', '-u', { help: 'url for fetching' });
-  parser.add_argument('--list', '-l', { help: 'url list for fetching, splitted by linebreak' });
-  parser.add_argument('--setting', '-s', { help: 'setting for fetching', required: true });
-  parser.add_argument('--debug', '-d', { help: 'debug mode', default: 'true' });
+  parser.add_argument('--list', '-l', { help: 'url list for fetching, splitted by linebreak', default: './list.txt' });
+  parser.add_argument('--setting', '-s', { help: 'setting for fetching', default: './setting.json' });
+  parser.add_argument('--wkdir', '-w', { help: 'working directory', default: '.' });
+  parser.add_argument('--debug', '-d', { help: 'debug mode', default: 'false' });
   parser.add_argument('--browser', '-b', { help: 'time (ms) of keeping browser open, only available when "--debug=true"', default: '' });
   const argv = parser.parse_args();
   // url list
@@ -29,32 +31,35 @@ const main = async () => {
   }
   if (argv.list) {
     try {
-      urlList.push(...fs.readFileSync(argv.list, { encoding: 'utf-8' }).split(/\r?\n|\s/).map((url) => {
+      const l = path.isAbsolute(argv.list) ? argv.list : path.resolve(`${argv.wkdir}${path.sep}${argv.list}`);
+      urlList.push(...fs.readFileSync(l, { encoding: 'utf-8' }).split(/\r?\n|\s/).map((url) => {
         return url.trim();
       }).filter((url) => {
         return check.not.emptyString(url) && !url.startsWith('#') && !url.startsWith(';') && !url.startsWith('//');
       }));
     } catch {
-      console.log(`invalid parameter | --list="${argv.list}" | no such text file`);
-      return 1;
+      console.log(`invalid parameter | --list="${argv.list}" --wkdir="${argv.wkdir}" | no such text file`);
     }
   }
   // setting
-  if (argv.setting) {
-    try {
-      setting.post(JSON.parse(fs.readFileSync(argv.setting, { encoding: 'utf-8' })));
-    } catch (error) {
-      console.log(`invalid parameter | --setting="${argv.setting}" | ${error.message}`);
-      return 1;
+  try {
+    const w = path.resolve(argv.wkdir);
+    const s = path.isAbsolute(argv.setting) ? argv.setting : path.resolve(w, argv.setting);
+    setting.post(JSON.parse(fs.readFileSync(s, { encoding: 'utf-8' })));
+    const allConfig = setting.get();
+    allConfig.runtime = { wkdir: w, setting: s };
+    if (argv.debug.toLowerCase() === 'true') {
+      allConfig.debug.enable = true;
     }
-  }
-  //
-  const allConfig = setting.get();
-  if (argv.debug.toLowerCase === 'true') {
-    allConfig.debug.enable = true;
-  }
-  if (argv.browser) {
-    allConfig.debug.keepBrowserMs = Math.max(parseInt(argv.browser), 10000);
+    if (argv.browser) {
+      allConfig.debug.keepBrowserMs = Math.max(parseInt(argv.browser), 10000);
+    }
+    if (allConfig.debug.enable) {
+      console.log(JSON.stringify(allConfig, null, 2));
+    }
+  } catch (error) {
+    console.log(`invalid parameter | --setting="${argv.setting}" --wkdir="${argv.wkdir}" | ${error.message}`);
+    return 1;
   }
   //
   // init

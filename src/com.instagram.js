@@ -50,7 +50,6 @@ const getUserFromUserName = async ({ userName, opt }) => {
   const html = await utils.getHtmlByPuppeteer({ ...opt, url: `https://www.instagram.com/${userName}` });
   const $ = cheerio.load(html);
   //
-  fs.writeFileSync('1.htm', html);
   const title = $('head>meta[property="og:title"]')?.attr('content') || '';
   const temp = /^(.*)\(@(.*)\)(.*)$/.exec(title);
   if (check.not.array(temp)) {
@@ -302,7 +301,7 @@ const save = async ({ textWithUrl }) => {
     url,
   });
   // meta
-  const metaFile = `com.instagram.${code}.meta.json`;
+  const metaFile = path.resolve(allConfig.runtime.wkdir, `com.instagram.${code}.meta.json`);
   fs.writeFileSync(metaFile, JSON.stringify(raw, null, 2));
   if (check.not.string(allConfig.eagle.stage) || check.emptyString(allConfig.eagle.stage) || !utils.urlRegex.test(allConfig.eagle.stage)) {
     // local

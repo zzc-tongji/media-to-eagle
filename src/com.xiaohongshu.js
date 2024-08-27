@@ -158,7 +158,7 @@ const save = async ({ textWithUrl }) => {
     url: website,
   });
   // meta
-  const metaFile = `com.xiaohongshu.${id}.meta.json`;
+  const metaFile = path.resolve(allConfig.runtime.wkdir, `com.xiaohongshu.${id}.meta.json`);
   fs.writeFileSync(metaFile, JSON.stringify(note, null, 2));
   if (check.not.string(allConfig.eagle.stage) || check.emptyString(allConfig.eagle.stage) || !utils.urlRegex.test(allConfig.eagle.stage)) {
     // local
