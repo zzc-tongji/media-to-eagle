@@ -4,12 +4,16 @@ import path from 'node:path';
 import check from 'check-types';
 import fetch, { FormData, Blob } from 'node-fetch';
 import { HttpsProxyAgent } from 'https-proxy-agent';
-import puppeteer from 'puppeteer';
+import puppeteer from 'puppeteer-extra';
+import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 import randomUseragent from 'random-useragent';
 //
 import * as eagle from './eagle.js';
+import * as setting from './setting.js';
 
 const urlRegex = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*)/;
+
+let allConfig = null;
 
 const createEagleFolder = async ({ parentName, name, summary, mediaCount, source, url }) => {
   if (check.not.string(parentName) || check.emptyString(parentName)) {
@@ -62,22 +66,17 @@ const formatDateTime = (input, style) => {
   return dateTime.toString();
 };
 
-const getHtml = async ({ url, fetchOption = {}, randomUserAgent = true, proxy = '', timeoutMs = 10000, debug = false }) => {
+const getHtml = async ({ url, fetchOption = {}, randomUserAgent = true }) => {
+  // setting
+  if (!allConfig) {
+    allConfig = setting.get();
+  }
   // parameter
   if (check.not.string(url) || !urlRegex.exec(url)) {
     throw Error('utils | getHtml | parameter "url" should be "string" of valid url');
   }
   if (check.not.boolean(randomUserAgent)) {
     throw Error('utils | getHtml | parameter "randomUserAgent" should be "bool"');
-  }
-  if ((check.not.string(proxy)) || (check.nonEmptyString(proxy) && !urlRegex.exec(proxy))) {
-    throw Error('utils | getHtml | parameter "proxy" should be "string" of valid url OR empty string');
-  }
-  if (check.not.greaterOrEqual(timeoutMs, 10000)) {
-    throw Error('utils | getHtml | parameter "timeout" should be "number" greator than 10000');
-  }
-  if (check.not.boolean(debug)) {
-    throw Error('utils | getHtml | parameter "debug" should be "bool"');
   }
   // fetch option
   if (check.not.object(fetchOption)) {
@@ -90,12 +89,12 @@ const getHtml = async ({ url, fetchOption = {}, randomUserAgent = true, proxy = 
     fetchOption.headers['User-Agent'] = getRandomUsarAgent();
   }
   // other option
-  if (check.not.emptyString(proxy)) {
+  if (check.string(allConfig.browser.fetch.proxy) && urlRegex.exec(allConfig.browser.fetch.proxy)) {
     let proxyAgent;
     try {
-      proxyAgent = new HttpsProxyAgent(proxy);
+      proxyAgent = new HttpsProxyAgent(allConfig.browser.fetch.proxy);
     } catch (error) {
-      throw new Error(`utils | getHtml | fetch ${url} | proxy issue | proxy = ${proxy} | ${error.message}`);
+      throw new Error(`utils | getHtml | fetch ${url} | proxy issue | proxy = ${allConfig.browser.fetch.proxy} | ${error.message}`);
     }
     fetchOption.agent = proxyAgent;
   }
@@ -111,20 +110,34 @@ const getHtml = async ({ url, fetchOption = {}, randomUserAgent = true, proxy = 
         }
         return response.text();
       }),
-    sleep(timeoutMs)
+    sleep(allConfig.browser.fetch.timeoutMs)
       .then(() => {
-        throw new Error(`utils | getHtml | fetch ${url} | network issue | timeout after ${timeoutMs} ms`);
+        throw new Error(`utils | getHtml | fetch ${url} | network issue | timeout after ${allConfig.browser.fetch.timeoutMs} ms`);
       }),
   ]);
-  if (debug) {
-    const file = 'get-html.html';
+  // debug
+  if (allConfig.browser.fetch.debug.enable) {
+    const file = path.resolve(allConfig.runtime.wkdir, `${Date.now()}.html`);
     console.log(`HTML content of "${url}" is saved to "${file}".`);
     fs.writeFileSync(file, JSON.stringify(html, null, 2));
   }
+  //
   return html;
 };
 
-const getHtmlByPuppeteer = async ({ url, headerMap = {}, blockUrlList = [], randomUserAgent = true, proxy = '', timeoutMs = 60000, debug = false, keepBrowserMs = 10000 }) => {
+puppeteer.use(StealthPlugin());
+
+const pptr = {
+  browser: null,
+  page: null,
+  cookie: null,
+};
+
+const getHtmlByPuppeteer = async ({ url, headerMap = {}, blockUrlList = [], randomUserAgent = true, cookieParam = [] }) => {
+  // setting
+  if (!allConfig) {
+    allConfig = setting.get();
+  }
   // parameter
   if (check.not.string(url) || !urlRegex.exec(url)) {
     throw Error('utils | getHtmlByPuppeteer | parameter "url" should be "string" of valid url');
@@ -138,66 +151,79 @@ const getHtmlByPuppeteer = async ({ url, headerMap = {}, blockUrlList = [], rand
   if (check.not.boolean(randomUserAgent)) {
     throw Error('utils | getHtmlByPuppeteer | parameter "randomUserAgent" should be "bool"');
   }
-  if ((check.not.string(proxy)) || (check.nonEmptyString(proxy) && !urlRegex.exec(proxy))) {
-    throw Error('utils | getHtmlByPuppeteer | parameter "proxy" should be "string" of valid url OR empty string');
-  }
-  if (check.not.greaterOrEqual(timeoutMs, 10000)) {
-    throw Error('utils | getHtmlByPuppeteer | parameter "timeout" should be "number" greator than 60000');
-  }
-  if (check.not.boolean(debug)) {
-    throw Error('utils | getHtmlByPuppeteer | parameter "debug" should be "bool"');
-  }
-  if (check.not.greaterOrEqual(keepBrowserMs, 10000)) {
-    throw Error('utils | getHtmlByPuppeteer | parameter "keepBrowserMs" should be "number" greator than 10000');
-  }
   // brower
   const browserOption = {
-    args: [],
+    args: [ '--window-size=1920,1080' ],
     defaultViewport: null,
-    devtools: debug,
-    headless: debug ? false : 'new',
+    devtools: allConfig.browser.puppeteer.debug.enable,
+    headless: allConfig.browser.puppeteer.debug.enable ? false : 'new',
   };
-  if (check.nonEmptyString(proxy)) {
-    browserOption.args.push(`--proxy-server=${proxy}`);
+  if (check.string(allConfig.browser.puppeteer.proxy) && urlRegex.exec(allConfig.browser.puppeteer.proxy)) {
+    browserOption.args.push(`--proxy-server=${allConfig.browser.puppeteer.proxy}`);
   }
-  const browser = await puppeteer.launch(browserOption);
+  if (!pptr.browser) {
+    pptr.browser = await puppeteer.launch(browserOption);
+  }
+  const browser = pptr.browser;
   // page
-  const page = (await browser.pages())[0] || await browser.newPage();
+  if (!pptr.page) {
+    pptr.page = await browser.newPage();
+    // blocked url
+    if (check.nonEmptyArray(blockUrlList)) {
+      await pptr.page.setRequestInterception(true);
+      pptr.page.on('request', (request) => {
+        const url = request.url();
+        const needBlock = blockUrlList.reduce((prev, curr) => {
+          return prev || url.includes(curr);
+        }, false);
+        if (needBlock) {
+          request.abort();
+          return;
+        }
+        request.continue();
+      });
+    }
+  }
+  // cookie
+  if (!check.array(pptr.cookie)) {
+    pptr.cookie = [];
+  }
+  const isCookieLoaded = pptr.cookie.reduce((prev, curr) => {
+    return prev || (curr === cookieParam);
+  }, false);
+  if (!isCookieLoaded) {
+    for (let i = 0; i < cookieParam.length; i++) {
+      await pptr.page.setCookie(cookieParam[i]);
+    }
+    pptr.cookie.push(cookieParam);
+  }
+  //
+  const page = pptr.page;
   if (check.not.emptyObject(headerMap)) {
     await page.setExtraHTTPHeaders(headerMap);
   }
   if (randomUserAgent) {
     await page.setUserAgent(getRandomUsarAgent());
   }
-  if (check.nonEmptyArray(blockUrlList)) {
-    await page.setRequestInterception(true);
-    page.on('request', (request) => {
-      const url = request.url();
-      const needBlock = blockUrlList.reduce((prev, curr) => {
-        return prev || url.includes(curr);
-      }, false);
-      if (needBlock) {
-        request.abort();
-        return;
-      }
-      request.continue();
-    });
-  }
   // html
   try {
-    await page.goto(url, { waitUntil: 'networkidle2', timeout: timeoutMs });
+    await page.goto(url, { waitUntil: 'networkidle2', timeout: allConfig.browser.puppeteer.timeoutMs });
   } catch (e) {
     throw Error(`utils | getHtmlByPuppeteer | goto "${url}" | ${e.message}`);
   }
   // eslint-disable-next-line no-undef
   const html = await page.evaluate(() => document.documentElement.outerHTML);
-  if (debug) {
-    const file = 'get-html-by-puppeteer.html';
-    console.log(`HTML content of "${url}" is saved to "${file}".`);
-    fs.writeFileSync(file, html);
-    await sleep(keepBrowserMs);
+  // debug
+  if (allConfig.browser.puppeteer.debug.enable) {
+    const timestampMs = Date.now();
+    const htmlFile = path.resolve(allConfig.runtime.wkdir, `${timestampMs}.html`);
+    console.log(`HTML content of "${url}" is saved to "${htmlFile}".`);
+    fs.writeFileSync(htmlFile, html);
+    const screenshotFile = path.resolve(allConfig.runtime.wkdir, `${timestampMs}.png`);
+    await page.screenshot({ path: screenshotFile, fullPage: true });
+    console.log(`Screenshot of "${url}" is saved to "${htmlFile}".`);
   }
-  await browser.close();
+  //
   return html;
 };
 
@@ -248,4 +274,4 @@ const uploadViaHttp = ({ filePath, url }) => {
   return text;
 };
 
-export { urlRegex, createEagleFolder, getHtml, getHtmlByPuppeteer, formatDateTime, sleep, uploadViaHttp };
+export { urlRegex, createEagleFolder, getHtml, getHtmlByPuppeteer, formatDateTime, sleep, uploadViaHttp, pptr };

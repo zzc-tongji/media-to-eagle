@@ -69,10 +69,6 @@ const save = async ({ textWithUrl }) => {
   }
   // parse data
   const opt = {};
-  opt.timeoutMs = 10000;
-  if (check.string(siteConfig.proxy)) {
-    opt.proxy = siteConfig.proxy;
-  }
   opt.fetchOption = {};
   if (check.object(siteConfig.headerMap)) {
     opt.fetchOption.headers = siteConfig.headerMap;
@@ -82,9 +78,6 @@ const save = async ({ textWithUrl }) => {
     (check.string(siteConfig.headerMap['user-agent']) && check.not.emptyArray(siteConfig.headerMap['user-agent']))
   ) {
     opt.randomUserAgent = false;
-  }
-  if (allConfig.debug.enable) {
-    opt.debug = true;
   }
   //
   const html = await utils.getHtml({ ...opt, url });
@@ -158,7 +151,7 @@ const save = async ({ textWithUrl }) => {
     url: website,
   });
   // meta
-  const metaFile = path.resolve(allConfig.runtime.wkdir, `com.xiaohongshu.${id}.meta.json`);
+  const metaFile = path.resolve(allConfig.runtime.wkdir, `${Date.now()}.com.xiaohongshu.${id}.meta.json`);
   fs.writeFileSync(metaFile, JSON.stringify(note, null, 2));
   if (check.not.string(allConfig.eagle.stage) || check.emptyString(allConfig.eagle.stage) || !utils.urlRegex.test(allConfig.eagle.stage)) {
     // local
@@ -191,7 +184,7 @@ const save = async ({ textWithUrl }) => {
       folderId: folder.id,
     });
   }
-  if (!allConfig.debug.enable) {
+  if (!allConfig.keepMetaFile) {
     fs.unlinkSync(metaFile);
   }
   // image

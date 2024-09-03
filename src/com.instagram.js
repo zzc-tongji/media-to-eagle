@@ -103,10 +103,6 @@ const save = async ({ textWithUrl }) => {
   }
   // parse data
   const opt = {};
-  opt.timeoutMs = 60000;
-  if (check.string(siteConfig.proxy)) {
-    opt.proxy = siteConfig.proxy;
-  }
   if (check.object(siteConfig.headerMap)) {
     opt.headerMap = siteConfig.headerMap;
   }
@@ -120,10 +116,7 @@ const save = async ({ textWithUrl }) => {
     'https://edge-chat.instagram.com/',
     'https://www.facebook.com/',
   ];
-  if (allConfig.debug.enable) {
-    opt.debug = true;
-  }
-  opt.keepBrowserMs = allConfig.debug.keepBrowserMs;
+  opt.cookieParam = siteConfig.cookieParam;
   //
   const html = await utils.getHtmlByPuppeteer({ ...opt, url: inputUrl });
   // get raw data of post (1)
@@ -144,15 +137,12 @@ const save = async ({ textWithUrl }) => {
     return JSON.parse(s);
   });
   let loggedIn = false;
-  let rawLogin = searchObjectWithKeyValue(full, '0', 'XIGSharedData');
+  let rawLogin = searchObjectWithKeyValue(full, '0', 'PolarisViewer');
   if (check.not.emptyArray(rawLogin.length)) {
     rawLogin = rawLogin[0];
-    if (check.array(rawLogin) && rawLogin.length > 2 && check.string(rawLogin[2].raw)) {
-      try {
-        loggedIn = check.object(JSON.parse(rawLogin[2].raw)?.config?.viewer || null);
-      } catch {
-        //
-      }
+    if (check.array(rawLogin) && rawLogin.length > 2) {
+      rawLogin = rawLogin[2];
+      loggedIn = rawLogin.data ? true : false;
     }
   }
   if (!loggedIn) {
@@ -334,7 +324,7 @@ const save = async ({ textWithUrl }) => {
       folderId: folder.id,
     });
   }
-  if (!allConfig.debug.enable) {
+  if (!allConfig.keepMetaFile) {
     fs.unlinkSync(metaFile);
   }
   // image

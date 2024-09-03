@@ -20,6 +20,8 @@
     "https-proxy-agent": "^7.0.1",
     "node-fetch": "^3.3.2",
     "puppeteer": "^21.1.1",
+    "puppeteer-extra": "^3.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2",
     "random-useragent": "^0.5.0"
   }
 }
