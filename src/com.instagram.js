@@ -146,7 +146,7 @@ const save = async ({ textWithUrl }) => {
     }
   }
   if (!loggedIn) {
-    throw Error(`com.instagram | login required | headerMap.cookie = ${siteConfig.headerMap.cookie}`);
+    throw Error('com.instagram | login required');
   }
   const raw = searchObjectWithKeyValue(full, 'code', code).find(r => check.number(r.taken_at));
   // validate data
