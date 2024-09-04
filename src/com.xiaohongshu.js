@@ -28,7 +28,7 @@ const getRedIdFromUserId = async ({ userId, opt }) => {
     return redIdMap[userId];
   }
   // parse data
-  const html = await utils.getHtml({ ...opt, url: `https://www.xiaohongshu.com/user/profile/${userId}` });
+  const html = await utils.getHtmlByFetch({ ...opt, url: `https://www.xiaohongshu.com/user/profile/${userId}` });
   const $ = cheerio.load(html);
   let data = $('html body script:contains("window.__INITIAL_STATE__")').text();
   data = data.replace('window.__INITIAL_STATE__', 'data');
@@ -80,7 +80,7 @@ const save = async ({ textWithUrl }) => {
     opt.randomUserAgent = false;
   }
   //
-  const html = await utils.getHtml({ ...opt, url });
+  const html = await utils.getHtmlByFetch({ ...opt, url });
   const $ = cheerio.load(html);
   let data = $('html body script:contains("window.__INITIAL_STATE__")').text();
   data = data.replace('window.__INITIAL_STATE__', 'data');

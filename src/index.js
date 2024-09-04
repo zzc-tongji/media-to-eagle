@@ -6,6 +6,7 @@ import check from 'check-types';
 //
 import * as com_instagram from './com.instagram.js';
 import * as com_xiaohongshu from './com.xiaohongshu.js';
+import * as com_weibo from './com.weibo.js';
 import * as eagle from './eagle.js';
 import * as setting from './setting.js';
 import { pptr } from './utils.js';
@@ -58,6 +59,7 @@ const main = async () => {
   const handlerList = {
     com_instagram,
     com_xiaohongshu,
+    com_weibo,
   };
   for (const key in handlerList) {
     const handler = handlerList[key];

@@ -66,7 +66,7 @@ const formatDateTime = (input, style) => {
   return dateTime.toString();
 };
 
-const getHtml = async ({ url, fetchOption = {}, randomUserAgent = true }) => {
+const getHtmlByFetch = ({ url, fetchOption = {}, randomUserAgent = true }) => {
   // setting
   if (!allConfig) {
     allConfig = setting.get();
@@ -99,7 +99,7 @@ const getHtml = async ({ url, fetchOption = {}, randomUserAgent = true }) => {
     fetchOption.agent = proxyAgent;
   }
   // fetch
-  const html = Promise.race([
+  return Promise.race([
     fetch(url, fetchOption)
       .catch((error) => {
         throw new Error(`utils | getHtml | fetch ${url} | network issue | ${error.message}`);
@@ -114,15 +114,65 @@ const getHtml = async ({ url, fetchOption = {}, randomUserAgent = true }) => {
       .then(() => {
         throw new Error(`utils | getHtml | fetch ${url} | network issue | timeout after ${allConfig.browser.fetch.timeoutMs} ms`);
       }),
-  ]);
-  // debug
-  if (allConfig.browser.fetch.debug.enable) {
-    const file = path.resolve(allConfig.runtime.wkdir, `${Date.now()}.html`);
-    console.log(`HTML content of "${url}" is saved to "${file}".`);
-    fs.writeFileSync(file, JSON.stringify(html, null, 2));
+  ]).then((html) => {
+    // debug
+    if (allConfig.browser.fetch.debug.enable) {
+      const file = path.resolve(allConfig.runtime.wkdir, `${Date.now()}.html`);
+      console.log(`HTML content of "${url}" is saved to "${file}".`);
+      fs.writeFileSync(file, JSON.stringify(html, null, 2));
+    }
+    //
+    return html;
+  });
+};
+
+const getRedirectByFetch = ({ url, fetchOption = {}, randomUserAgent = true }) => {
+  // setting
+  if (!allConfig) {
+    allConfig = setting.get();
   }
-  //
-  return html;
+  // parameter
+  if (check.not.string(url) || !urlRegex.exec(url)) {
+    throw Error('utils | getHtml | parameter "url" should be "string" of valid url');
+  }
+  if (check.not.boolean(randomUserAgent)) {
+    throw Error('utils | getHtml | parameter "randomUserAgent" should be "bool"');
+  }
+  // fetch option
+  if (check.not.object(fetchOption)) {
+    fetchOption = {};
+  }
+  if (check.not.object(fetchOption.headers)) {
+    fetchOption.headers = {};
+  }
+  if (randomUserAgent) {
+    fetchOption.headers['User-Agent'] = getRandomUsarAgent();
+  }
+  fetchOption.redirect = 'manual';
+  // other option
+  if (check.string(allConfig.browser.fetch.proxy) && urlRegex.exec(allConfig.browser.fetch.proxy)) {
+    let proxyAgent;
+    try {
+      proxyAgent = new HttpsProxyAgent(allConfig.browser.fetch.proxy);
+    } catch (error) {
+      throw new Error(`utils | getRedirect | fetch ${url} | proxy issue | proxy = ${allConfig.browser.fetch.proxy} | ${error.message}`);
+    }
+    fetchOption.agent = proxyAgent;
+  }
+  // fetch
+  return Promise.race([
+    fetch(url, fetchOption)
+      .catch((error) => {
+        throw new Error(`utils | getRedirect | fetch ${url} | network issue | ${error.message}`);
+      })
+      .then((response) => {
+        return response.headers.get('Location') || response.headers.get('location') || '';
+      }),
+    sleep(allConfig.browser.fetch.timeoutMs)
+      .then(() => {
+        throw new Error(`utils | getRedirect | fetch ${url} | network issue | timeout after ${allConfig.browser.fetch.timeoutMs} ms`);
+      }),
+  ]);
 };
 
 puppeteer.use(StealthPlugin());
@@ -227,6 +277,74 @@ const getHtmlByPuppeteer = async ({ url, headerMap = {}, blockUrlList = [], rand
   return html;
 };
 
+const getCookieByPuppeteer = async ({ url, headerMap = {}, blockUrlList = [], randomUserAgent = true }) => {
+  // setting
+  if (!allConfig) {
+    allConfig = setting.get();
+  }
+  // parameter
+  if (check.not.string(url) || !urlRegex.exec(url)) {
+    throw Error('utils | getHtmlByPuppeteer | parameter "url" should be "string" of valid url');
+  }
+  if (check.not.object.of.string(headerMap)) {
+    throw Error('utils | getHtmlByPuppeteer | parameter "headerMap" should be "Object<String>"');
+  }
+  if (check.not.array.of.string(blockUrlList)) {
+    throw Error('utils | getHtmlByPuppeteer | parameter "blockUrlList" should be "Array<String>"');
+  }
+  if (check.not.boolean(randomUserAgent)) {
+    throw Error('utils | getHtmlByPuppeteer | parameter "randomUserAgent" should be "bool"');
+  }
+  // brower
+  const browserOption = {
+    args: [ '--window-size=1920,1080' ],
+    defaultViewport: null,
+    devtools: allConfig.browser.puppeteer.debug.enable,
+    headless: allConfig.browser.puppeteer.debug.enable ? false : 'new',
+  };
+  if (check.string(allConfig.browser.puppeteer.proxy) && urlRegex.exec(allConfig.browser.puppeteer.proxy)) {
+    browserOption.args.push(`--proxy-server=${allConfig.browser.puppeteer.proxy}`);
+  }
+  if (!pptr.browser) {
+    pptr.browser = await puppeteer.launch(browserOption);
+  }
+  const browser = pptr.browser;
+  // page
+  if (!pptr.page) {
+    pptr.page = await browser.newPage();
+    // blocked url
+    if (check.nonEmptyArray(blockUrlList)) {
+      await pptr.page.setRequestInterception(true);
+      pptr.page.on('request', (request) => {
+        const url = request.url();
+        const needBlock = blockUrlList.reduce((prev, curr) => {
+          return prev || url.includes(curr);
+        }, false);
+        if (needBlock) {
+          request.abort();
+          return;
+        }
+        request.continue();
+      });
+    }
+  }
+  //
+  const page = pptr.page;
+  if (check.not.emptyObject(headerMap)) {
+    await page.setExtraHTTPHeaders(headerMap);
+  }
+  if (randomUserAgent) {
+    await page.setUserAgent(getRandomUsarAgent());
+  }
+  // html
+  try {
+    await page.goto(url, { waitUntil: 'networkidle2', timeout: allConfig.browser.puppeteer.timeoutMs });
+  } catch (e) {
+    throw Error(`utils | getCookieByPuppeteer | goto "${url}" | ${e.message}`);
+  }
+  return await page.cookies();
+};
+
 const getRandomUsarAgent = () => {
   return randomUseragent.getRandom((ua) => {
     const ualc = ua.userAgent.toLowerCase();
@@ -274,4 +392,15 @@ const uploadViaHttp = ({ filePath, url }) => {
   return text;
 };
 
-export { urlRegex, createEagleFolder, getHtml, getHtmlByPuppeteer, formatDateTime, sleep, uploadViaHttp, pptr };
+export {
+  urlRegex,
+  createEagleFolder,
+  getHtmlByFetch,
+  getRedirectByFetch,
+  getHtmlByPuppeteer,
+  getCookieByPuppeteer,
+  formatDateTime,
+  sleep,
+  uploadViaHttp,
+  pptr,
+};
