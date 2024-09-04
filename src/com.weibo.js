@@ -140,7 +140,7 @@ const save = async ({ textWithUrl }) => {
   if (check.not.string(weibo?.created_at)) {
     throw new Error(`com.weibo | invalid weibo format | weibo?.created_at | ${JSON.stringify(weibo)}`);
   }
-  if (check.object(weibo?.page_info)) {
+  if (weibo?.page_info?.object_type === 'video') {
     // video
     if (check.not.object(weibo?.page_info?.media_info?.big_pic_info)) {
       throw new Error(`com.weibo | invalid weibo format | weibo?.page_info?.media_info?.big_pic_info | ${JSON.stringify(weibo)}`);
@@ -240,7 +240,7 @@ const save = async ({ textWithUrl }) => {
     fs.unlinkSync(metaFile);
   }
   let payload = {};
-  if (weibo?.page_info) {
+  if (weibo?.page_info?.object_type === 'video') {
     // video
     const image_url = Object.values(weibo.page_info.media_info.big_pic_info).sort((a, b) => b.width - a.width)?.[0]?.url;
     const video_url = weibo.page_info.media_info.playback_list.sort((a, b) => b.play_info.size - a.play_info.size)?.[0]?.play_info?.url;

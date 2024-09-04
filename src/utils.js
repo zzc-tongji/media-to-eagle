@@ -207,6 +207,7 @@ const getHtmlByPuppeteer = async ({ url, headerMap = {}, blockUrlList = [], rand
     defaultViewport: null,
     devtools: allConfig.browser.puppeteer.debug.enable,
     headless: allConfig.browser.puppeteer.debug.enable ? false : 'new',
+    executablePath: allConfig.browser.puppeteer.chromePath || undefined,
   };
   if (check.string(allConfig.browser.puppeteer.proxy) && urlRegex.exec(allConfig.browser.puppeteer.proxy)) {
     browserOption.args.push(`--proxy-server=${allConfig.browser.puppeteer.proxy}`);
@@ -301,6 +302,7 @@ const getCookieByPuppeteer = async ({ url, headerMap = {}, blockUrlList = [], ra
     defaultViewport: null,
     devtools: allConfig.browser.puppeteer.debug.enable,
     headless: allConfig.browser.puppeteer.debug.enable ? false : 'new',
+    executablePath: allConfig.browser.puppeteer.chromePath || undefined,
   };
   if (check.string(allConfig.browser.puppeteer.proxy) && urlRegex.exec(allConfig.browser.puppeteer.proxy)) {
     browserOption.args.push(`--proxy-server=${allConfig.browser.puppeteer.proxy}`);
