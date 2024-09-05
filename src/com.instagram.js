@@ -82,7 +82,9 @@ const getUrl = (textWithUrl = '') => {
   let url = utils.urlRegex.exec(textWithUrl)?.[0] || '';
   const valid = [
     '/instagram.com/p/',
+    '/instagram.com/reel/',
     '/www.instagram.com/p/',
+    '/www.instagram.com/reel/',
   ].reduce((prev, curr) => {
     return prev || url.includes(curr);
   }, false);
@@ -269,13 +271,13 @@ const save = async ({ textWithUrl }) => {
     ...raw.html_tag_list.map(tag => `_union_tag=${tag}`),
   ];
   const atUserList = Object.values(atUserMap).map(({ fullName, userName }) => {
-    return { full_name: fullName, url_id: userName };
+    return { name: fullName, instagram_id: userName };
   });
   const mediaCount = singleImage ? 1 : raw.carousel_media.length;
   const annotation = {
     creator: {
-      full_name: creator.fullName,
-      url_id: creator.userName,
+      name: creator.fullName,
+      instagram_id: creator.userName,
     },
     description: raw.description,
     media_count: mediaCount,

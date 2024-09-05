@@ -179,8 +179,8 @@ const save = async ({ textWithUrl }) => {
     `_user_id=weibo.com/${weibo.user.idstr}`,
     ...(weibo?.topic_struct || []).filter(t => t?.topic_title || null).map(t => `_tag=weibo.com/${t.topic_title}`),
     ...(weibo?.url_struct || []).filter(u => u?.url_title || null).map(u => `_tag=weibo.com/${u.url_title}`),
-    ...(weibo?.topic_struct || []).filter(t => t?.topic_title || null).map(t => `_union_tag=weibo.com/${t.topic_title}`),
-    ...(weibo?.url_struct || []).filter(u => u?.url_title || null).map(u => `_union_tag=weibo.com/${u.url_title}`),
+    ...(weibo?.topic_struct || []).filter(t => t?.topic_title || null).map(t => `_union_tag=${t.topic_title}`),
+    ...(weibo?.url_struct || []).filter(u => u?.url_title || null).map(u => `_union_tag=${u.url_title}`),
   ];
   const annotation = {
     creator: {
@@ -351,7 +351,7 @@ const handle27004 = async ({ weiboId, opt }) => {
     '_source=weibo.com',
     `_user_id=weibo.com/${data.user.id}`,
     ...topicList.map(t => `_tag=weibo.com/${t}`),
-    ...topicList.map(t => `_union_tag=weibo.com/${t}`),
+    ...topicList.map(t => `_union_tag=${t}`),
   ];
   const annotation = {
     creator: {
