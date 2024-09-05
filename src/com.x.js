@@ -2,7 +2,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 //
 import check from 'check-types';
-import cheerio from 'cheerio';
+import * as cheerio from 'cheerio';
 //
 import * as eagle from './eagle.js';
 import * as setting from './setting.js';
