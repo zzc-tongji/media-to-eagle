@@ -116,16 +116,17 @@ const save = async ({ textWithUrl }) => {
   let atUserXIdList = [];
   let hashtagList = [];
   if (textElement.length > 0) {
-    textElement.prop('innerHTML').split('</a>').map((t) => {
-      let temp = /@([\S]+?)\u003c\/span\u003e$/.exec(t);
-      if (temp) {
-        atUserXIdList.push(temp[1]);
+    const $test = cheerio.load(textElement.prop('outerHTML'));
+    const aElementList = $test('a');
+    for (let i = 0; i <= aElementList.length; i++) {
+      const t = aElementList.eq(i).text();
+      if (t.startsWith('@')) {
+        atUserXIdList.push(t.substring(1));
       }
-      temp = /#([\S]+?)$/.exec(t);
-      if (temp) {
-        hashtagList.push(temp[1]);
+      if (t.startsWith('#')) {
+        hashtagList.push(t.substring(1));
       }
-    });
+    }
   }
   atUserXIdList = Array.from(new Set(atUserXIdList));
   hashtagList = Array.from(new Set(hashtagList));
