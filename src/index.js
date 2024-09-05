@@ -7,6 +7,7 @@ import check from 'check-types';
 import * as com_instagram from './com.instagram.js';
 import * as com_xiaohongshu from './com.xiaohongshu.js';
 import * as com_weibo from './com.weibo.js';
+import * as com_x from './com.x.js';
 import * as eagle from './eagle.js';
 import * as setting from './setting.js';
 import { pptr } from './utils.js';
@@ -60,6 +61,7 @@ const main = async () => {
     com_instagram,
     com_xiaohongshu,
     com_weibo,
+    com_x,
   };
   for (const key in handlerList) {
     const handler = handlerList[key];
@@ -71,7 +73,7 @@ const main = async () => {
   for (const url of urlList) {
     for (const key in handlerList) {
       const handler = handlerList[key];
-      if (handler.getUrl(url)) {
+      if (await handler.getUrl(url)) {
         try {
           const message = await handler.save({ textWithUrl: url });
           console.log(`${url} | ${message}`);
