@@ -87,11 +87,10 @@ const main = async () => {
   // clean
   if (pptr.browser) {
     if (!allConfig.browser.puppeteer.debug.enable) {
-      pptr.cookie = null;
-      (await pptr.browser.pages()).map(p => p.close());
-      pptr.page = null;
       await pptr.browser.close();
       pptr.browser = null;
+      pptr.page = null;
+      pptr.cookie = null;
     } else {
       console.log('Close browser window to exit.');
     }
