@@ -91,17 +91,16 @@ const save = async ({ textWithUrl }) => {
   // parse data
   let $ = cheerio.load(html);
   const loggedIn = $('body header button[aria-label="Account menu"]').length > 0;
-  let article = $('body main article:eq(0)');
+  const previousArticleElementCount = $('body main article div.r-m5arl1.r-16y2uox').length;
+  let article = $('body main article').eq(previousArticleElementCount);
   if (article.length <= 0) {
     throw Error('com.x | tweet not found | element "<article />" not found');
   }
   let articleHtml = article.prop('outerHTML');
   $ = cheerio.load(articleHtml);
   // validate data
-  const isVideo = $('video').length > 0;
-  if (isVideo) {
-    throw Error('com.x | video tweet not supported');
-  }
+  const videoElement = $('video:eq(0)');
+  const isVideo = videoElement.length > 0;
   const createdAtString = $('time:eq(0)').prop('datetime');
   if (check.not.string(createdAtString) || check.emptyString(createdAtString)) {
     throw new Error(`com.x | invalid tweet format | $('time:eq(0)').prop('datetime') | ${articleHtml}`);
@@ -111,7 +110,7 @@ const save = async ({ textWithUrl }) => {
   // common
   const createdAtDate = new Date(createdAtString);
   const createdAtTimestampMs = createdAtDate.getTime();
-  const mediaCount = imageElementList.length;
+  const mediaCount = isVideo ? 2 : imageElementList.length;
   const text = (textElement.length > 0 ? textElement.text() : '');
   //
   let atUserXIdList = [];
@@ -144,6 +143,9 @@ const save = async ({ textWithUrl }) => {
     ...hashtagList.map(h => `_tag=x.com/${h}`),
     ...hashtagList.map(h => `_union_tag=${h}`),
   ];
+  if (isVideo) {
+    tagList.push('_todo=true');
+  }
   const annotation = {
     creator: {
       name: cache.userXIdMap[userXId].givenName,
@@ -204,30 +206,49 @@ const save = async ({ textWithUrl }) => {
   if (!allConfig.keepMetaFile) {
     fs.unlinkSync(metaFile);
   }
-  // image
-  const payload = {
-    items: [],
-    folderId: folder.id,
-  };
-  for (let i = 0; i < imageElementList.length; i++) {
-    const mediaUrl = imageElementList.eq(i).prop('src').replaceAll(/\?[\S]*$/g, '?format=jpg');
-    if (check.emptyString(mediaUrl)) {
-      continue;
+  let payload;
+  let rtn;
+  if (isVideo) {
+    // video
+    const mediaUrl = videoElement.prop('poster');
+    payload = {
+      items: [ {
+        url: mediaUrl,
+        name: eagle.generateTitle(createdAtTimestampMs + 1),
+        website: url,
+        tags: tagList,
+        annotation: JSON.stringify({ ...annotation, media_url: mediaUrl }),
+      } ],
+      folderId: folder.id,
+    };
+    rtn = `com.x | video tweet not supported | tag "_todo=true" added${loggedIn ? ' | login' : ' | non-login'}`;
+  } else {
+    // image
+    payload = {
+      items: [],
+      folderId: folder.id,
+    };
+    for (let i = 0; i < imageElementList.length; i++) {
+      const mediaUrl = imageElementList.eq(i).prop('src').replaceAll(/\?[\S]*$/g, '?format=jpg');
+      if (check.emptyString(mediaUrl)) {
+        continue;
+      }
+      payload.items.push({
+        url: mediaUrl,
+        name: eagle.generateTitle(createdAtTimestampMs + 1 + i),
+        website: url,
+        tags: tagList,
+        annotation: JSON.stringify({ ...annotation, media_url: mediaUrl }),
+      });
     }
-    payload.items.push({
-      url: mediaUrl,
-      name: eagle.generateTitle(createdAtTimestampMs + 1 + i),
-      website: url,
-      tags: tagList,
-      annotation: JSON.stringify({ ...annotation, media_url: mediaUrl }),
-    });
+    rtn = `com.x | ok${loggedIn ? ' | login' : ' | non-login'}`;
   }
   // add to eagle
   await eagle.post('/api/item/addFromURLs', payload);
   // interval
   await utils.sleep(siteConfig.interval);
   //
-  return `com.x | ok${loggedIn ? ' | login' : ' | non-login'}`;
+  return rtn;
 };
 
 export { init, getUrl, save };
