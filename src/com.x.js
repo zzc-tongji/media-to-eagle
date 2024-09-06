@@ -243,7 +243,7 @@ const save = async ({ textWithUrl }) => {
       }
       payload.items.push({
         url: mediaUrl,
-        name: eagle.generateTitle(createdAtTimestampMs + 1 + i),
+        name: eagle.generateTitle(createdAtTimestampMs + imageElementList.length + 1 + 2 * i),
         website: url,
         tags: tagList,
         annotation: JSON.stringify({ ...annotation, media_url: mediaUrl }),
