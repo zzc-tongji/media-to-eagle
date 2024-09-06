@@ -7,8 +7,22 @@
     {
       "type": "node",
       "request": "launch",
-      "name": "dev",
+      "name": "Media to Eagle",
       "program": "${workspaceFolder}\\src\\index.js",
+      "args": ["--wkdir=${workspaceFolder}\\wkdir"]
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Get URL List",
+      "program": "${workspaceFolder}\\src\\tool\\get-url-list.js",
+      "args": ["--wkdir=${workspaceFolder}\\wkdir"]
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Check Library",
+      "program": "${workspaceFolder}\\src\\tool\\check-library.js",
       "args": ["--wkdir=${workspaceFolder}\\wkdir"]
     }
   ]
