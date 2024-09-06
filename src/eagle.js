@@ -18,25 +18,31 @@ const init = () => {
   eagleConfig = setting.get().eagle;
 };
 
-const get = (path) => {
-  const { host } = eagleConfig;
+const get = async (path, queryString = '') => {
+  const { host, token } = eagleConfig;
   if (check.not.string(path) || check.emptyString(path)) {
     throw Error('eagle | get | parameter "path" should be non-empty "string"');
   }
-  return fetch(`${host}${path}`, {
-    method: 'GET',
-    redirect: 'follow',
-  }).catch(() => {
-    throw new Error('eagle | not running');
-  }).then((response) => {
-    if (!response.ok) {
-      throw new Error(`eagle | invalid path | path = ${path}`);
+  let response = null;
+  for (let reconnect = 3, success = false; !success && reconnect >= 0; reconnect -= 1)
+    try {
+      response = await fetch(`${host}${path}?token=${token}${queryString.startsWith('&') ? '' : '&'}${queryString}`, {
+        method: 'GET',
+        redirect: 'follow',
+      });
+      success = true;
+    } catch (e) {
+      if (reconnect <= 0) {
+        throw new Error(`eagle | not running | ${e.message}`);
+      }
     }
-    return response.json();
-  });
+  if (!response.ok) {
+    throw new Error(`eagle | invalid path | path = ${path}`);
+  }
+  return await response.json();
 };
 
-const post = (path, payload) => {
+const post = async (path, payload) => {
   const { host, token } = eagleConfig;
   if (check.not.string(path) || check.emptyString(path)) {
     throw Error('eagle | post | parameter "path" should be non-empty "string"');
@@ -45,34 +51,39 @@ const post = (path, payload) => {
     throw Error('eagle | post | parameter "payload" should be "object"');
   }
   payload.token = token;
-  return fetch(`${host}${path}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json;charset=utf-8',
-    },
-    body: JSON.stringify(payload),
-  }).catch(() => {
-    throw new Error('eagle | not running');
-  }).then((response) => {
-    if (!response.ok) {
-      return response.text();
+  let response = null;
+  for (let reconnect = 3, success = false; !success && reconnect >= 0; reconnect -= 1)
+    try {
+      response = await fetch(`${host}${path}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json;charset=utf-8',
+        },
+        body: JSON.stringify(payload),
+      });
+      success = true;
+    } catch (e) {
+      if (reconnect <= 0) {
+        throw new Error(`eagle | not running | ${e.message}`);
+      }
     }
-    return response.json();
-  }).then((data) => {
-    if (typeof data === 'string') {
-      throw new Error(`eagle | invalid payload | payload = ${JSON.stringify(payload)} | response = ${data}`);
-    }
-    return data;
-  });
+  if (!response.ok) {
+    throw new Error(`eagle | invalid path | path = ${path}`);
+  }
+  const data = await response.json();
+  if (typeof data === 'string') {
+    throw new Error(`eagle | invalid payload | payload = ${JSON.stringify(payload)} | response = ${data}`);
+  }
+  return data;
 };
 
-const searchPreOrder = ({ name, data, depth = Number.MAX_SAFE_INTEGER }) => {
+const searchFolderPreOrder = ({ name, data, depth = Number.MAX_SAFE_INTEGER }) => {
   if (data.name && data.name === name) {
     return data;
   }
   if (depth > 0) {
     for (const child of data.children) {
-      const d = searchPreOrder({ name, data: child, depth: depth - 1 });
+      const d = searchFolderPreOrder({ name, data: child, depth: depth - 1 });
       if (d) {
         return d;
       }
@@ -89,18 +100,18 @@ const updateFolder = async ({ name, parentName = '', description = '' }) => {
   let folder;
   // create or get folder
   if (check.not.string(parentName) || check.emptyString(parentName)) {
-    folder = searchPreOrder({ name, data: root, depth: 1 });
+    folder = searchFolderPreOrder({ name, data: root, depth: 1 });
     if (check.not.object(folder)) {
       folder = (await post('/api/folder/create', {
         folderName: name,
       })).data;
     }
   } else {
-    let parentFolder = searchPreOrder({ name: parentName, data: root });
+    let parentFolder = searchFolderPreOrder({ name: parentName, data: root });
     if (check.not.object(parentFolder)) {
       throw new Error(`eagle | update folder | folder "${parentName}" not existent`);
     }
-    folder = searchPreOrder({ name, data: parentFolder, depth: 1 });
+    folder = searchFolderPreOrder({ name, data: parentFolder, depth: 1 });
     if (check.not.object(folder)) {
       folder = (await post('/api/folder/create', {
         folderName: name,
@@ -118,4 +129,11 @@ const updateFolder = async ({ name, parentName = '', description = '' }) => {
   return folder;
 };
 
-export { generateTitle, init, get, post, updateFolder };
+export {
+  generateTitle,
+  init,
+  get,
+  post,
+  searchFolderPreOrder,
+  updateFolder,
+};
