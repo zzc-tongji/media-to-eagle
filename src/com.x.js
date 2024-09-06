@@ -110,6 +110,7 @@ const save = async ({ textWithUrl }) => {
   // common
   const createdAtDate = new Date(createdAtString);
   const createdAtTimestampMs = createdAtDate.getTime();
+  // a video will be counted as 2 media (1 video + 1 cover)
   const mediaCount = isVideo ? 2 : imageElementList.length;
   const text = (textElement.length > 0 ? textElement.text() : '');
   //
@@ -171,6 +172,14 @@ const save = async ({ textWithUrl }) => {
     url,
   });
   // meta
+  articleHtml = articleHtml.replace('</article>', `<creator name="${cache.userXIdMap[userXId].givenName}" x_id="${userXId}" id="${cache.userXIdMap[userXId].identifier}" /></article>`);
+  if (atUserXIdList.length > 0) {
+    articleHtml = articleHtml.replace('</article>', `<div>${atUserXIdList.map((xId) => `<at_user name="${cache.userXIdMap[xId].givenName}" x_id="${xId}" id="${cache.userXIdMap[xId].identifier}" />`)}</div></article>`);
+  }
+  if (hashtagList.length > 0) {
+    articleHtml = articleHtml.replace('</article>', `<div>${hashtagList.map((t) => `<hash_tag value="${t}" />`)}</div></article>`);
+  }
+  //
   const metaFile = path.resolve(allConfig.runtime.wkdir, `${Date.now()}.com.x.${tweetId}.meta.html`);
   fs.writeFileSync(metaFile, articleHtml);
   if (check.not.string(allConfig.eagle.stage) || check.emptyString(allConfig.eagle.stage) || !utils.urlRegex.test(allConfig.eagle.stage)) {

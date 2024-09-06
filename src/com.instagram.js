@@ -273,7 +273,10 @@ const save = async ({ textWithUrl }) => {
   const atUserList = Object.values(atUserMap).map(({ fullName, userName }) => {
     return { name: fullName, instagram_id: userName };
   });
-  const mediaCount = singleImage ? 1 : raw.carousel_media.length;
+  // The video cover has been counted 'raw.carousel_media.length'.
+  // The video itself counted as 1.
+  // As a result, a video will be counted as 2 media.
+  const mediaCount = singleImage ? 1 : raw.carousel_media.length + (video ? 1 : 0);
   const annotation = {
     creator: {
       name: creator.fullName,

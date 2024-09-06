@@ -170,7 +170,7 @@ const save = async ({ textWithUrl }) => {
     return /\u003ca[\s\S]*\u003e@([\S]+)$/.exec(t)?.[1] || null;
   }).filter(name => name);
   weibo.at_user_screen_name_list = atUserScreenNameList;
-  //
+  // The video will be counted as 2 media (1 video + 1 cover image).
   const mediaCount = weibo?.page_info ? 2 : weibo.pic_num;
   //
   const tagList = [

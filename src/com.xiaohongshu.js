@@ -127,6 +127,9 @@ const save = async ({ textWithUrl }) => {
     ...note.tagList.filter(tag => tag?.name || null).map(tag => `_tag=xiaohongshu.com/${tag.name}`),
     ...note.tagList.filter(tag => tag?.name || null).map(tag => `_union_tag=${tag.name}`),
   ];
+  // The video cover has been counted 'note.imageList.length'.
+  // The video itself counted as 1.
+  // As a result, a video will be counted as 2 media.
   const mediaCount = note.imageList.length + (note.video ? 1 : 0);
   const annotation = {
     creator: {
