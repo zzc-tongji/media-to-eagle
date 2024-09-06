@@ -51,6 +51,7 @@ const main = async () => {
     if (!folder) {
       continue;
     }
+    const obj = {};
     for (let i = 0; i < folder.children.length; i++) {
       const f = folder.children[i];
       let description;
@@ -72,6 +73,11 @@ const main = async () => {
       if (!item.data || check.not.array(item.data)) {
         throw new Error(`check-library.js | eagle | GET /api/item/list | ${info.message}`);
       }
+      // duplicate
+      if (obj[f.name]) {
+        errorList.push(`${description.url} | ${folderName} | ${f.name} | duplicate`);
+      }
+      obj[f.name] = true;
       // empty folder
       if (item.data.length <= 0) {
         errorList.push(`${description.url} | ${folderName} | ${f.name} | empty folder`);
