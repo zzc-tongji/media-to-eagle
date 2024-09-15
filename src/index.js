@@ -68,6 +68,21 @@ const main = async () => {
     handler.init();
   }
   //
+  // prepare
+  //
+  if (allConfig?.meta?.cleanBeforeStart) {
+    const fileList = fs.readdirSync(allConfig.runtime.wkdir, { withFileTypes: true });
+    fileList.map((file) => {
+      if (!file.isFile()) {
+        return;
+      }
+      if (/.meta.(json|html)$/.test(file.name)) {
+        fs.unlinkSync(`${file.path || file.parentPath}${path.sep}${file.name}`);
+      }
+    });
+  }
+  await eagle.get('/api/library/history');
+  //
   // handle url
   //
   for (const url of urlList) {
@@ -84,7 +99,9 @@ const main = async () => {
       }
     }
   }
+  //
   // clean
+  //
   if (pptr.browser) {
     if (!allConfig.browser.puppeteer.debug.enable) {
       await pptr.browser.close();

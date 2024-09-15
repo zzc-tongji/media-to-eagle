@@ -187,7 +187,7 @@ const save = async ({ textWithUrl }) => {
       folderId: folder.id,
     });
   }
-  if (!allConfig.keepMetaFile) {
+  if (!allConfig?.meta?.keepMetaFile) {
     fs.unlinkSync(metaFile);
   }
   // image

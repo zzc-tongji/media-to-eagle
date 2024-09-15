@@ -236,7 +236,7 @@ const save = async ({ textWithUrl }) => {
       folderId: folder.id,
     });
   }
-  if (!allConfig.keepMetaFile) {
+  if (!allConfig?.meta?.keepMetaFile) {
     fs.unlinkSync(metaFile);
   }
   let payload = {};
@@ -407,7 +407,7 @@ const handle27004 = async ({ weiboId, opt }) => {
       folderId: folder.id,
     });
   }
-  if (!allConfig.keepMetaFile) {
+  if (!allConfig?.meta?.keepMetaFile) {
     fs.unlinkSync(metaFile);
   }
   let payload = {};
