@@ -64,7 +64,7 @@ const save = async ({ textWithUrl }) => {
     throw Error('jp.ameblo | invalid blog format | element "<script type="application/ld+json" />" not found');
   }
   //
-  const entryBody = $('body article #entryBody:eq(0)');
+  const entryBody = $('#entryBody:eq(0)');
   if (entryBody.length <= 0) {
     throw Error('jp.ameblo | invalid blog format | element "<div id="entryBody" />" not found');
   }
@@ -98,7 +98,9 @@ const save = async ({ textWithUrl }) => {
       continue;
     }
     imgUrl = imgUrl.split('?')[0];
-    imageUrlList.push(imgUrl);
+    if (/\/user_images\//.test(imgUrl)) {
+      imageUrlList.push(imgUrl);
+    }
   }
   const mediaCount = image.length + 1;
   //
