@@ -8,6 +8,8 @@ import * as com_instagram from './com.instagram.js';
 import * as com_xiaohongshu from './com.xiaohongshu.js';
 import * as com_weibo from './com.weibo.js';
 import * as com_x from './com.x.js';
+import * as jp_ameblo from './jp.ameblo.js';
+//
 import * as eagle from './eagle.js';
 import * as setting from './setting.js';
 import { pptr } from './utils.js';
@@ -62,6 +64,7 @@ const main = async () => {
     com_xiaohongshu,
     com_weibo,
     com_x,
+    jp_ameblo,
   };
   for (const key in handlerList) {
     const handler = handlerList[key];
@@ -89,11 +92,13 @@ const main = async () => {
     '.instagram.com',
     '.weibo.com',
     '.x.com',
+    '.ameblo.jp',
     //
     'xiaohongshu.com',
     'instagram.com',
     'weibo.com',
     'x.com',
+    'ameblo.jp',
   ];
   folderNameList.map((folderName) => {
     const folder = eagle.searchFolderPreOrder({ name: folderName, data: { children: info.data.folders } });
@@ -126,9 +131,9 @@ const main = async () => {
   for (const url of urlList) {
     let hit = false;
     for (const key in handlerList) {
-      if (hit) { continue; }
       const handler = handlerList[key];
       if (await handler.getUrl(url)) {
+        hit = true;
         try {
           const message = await handler.save({ textWithUrl: url });
           console.log(`${url} | ${message}`);
@@ -136,7 +141,6 @@ const main = async () => {
         } catch (error) {
           console.log(`${url} | ${error.message}`);
         }
-        hit = true;
       }
     }
     if (!hit) { console.log(`${url} | handler not found`); }
