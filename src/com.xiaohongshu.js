@@ -113,6 +113,10 @@ const save = async ({ textWithUrl }) => {
   if (check.not.array(note?.atUserList)) {
     throw new Error(`com.xiaohongshu | invalid note format | note?.atUserList | ${JSON.stringify(note)}`);
   }
+  const website = `https://www.xiaohongshu.com/explore/${id}`;
+  if (allConfig.runtime.collected[website]) {
+    throw new Error('com.xiaohongshu | already collected');
+  }
   // get red id
   note.user.redId = await getRedIdFromUserId({ userId: note.user.userId, opt });
   for (const u of note.atUserList) {
@@ -144,7 +148,6 @@ const save = async ({ textWithUrl }) => {
     }) : undefined,
   };
   // folder
-  const website = `https://www.xiaohongshu.com/explore/${id}`;
   const folder = await utils.createEagleFolder({
     parentName: '.xiaohongshu.com',
     name: id,

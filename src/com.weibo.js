@@ -162,6 +162,10 @@ const save = async ({ textWithUrl }) => {
   }
   // common
   weiboUrl = `https://weibo.com/${weibo.user.idstr}/${weibo.idstr}`;
+  const weiboShortUrl = `https://weibo.com/${weibo.user.idstr}/${weibo.mblogid}`;
+  if (allConfig.runtime.collected[weiboUrl] || allConfig.runtime.collected[weiboShortUrl]) {
+    throw new Error('com.weibo | already collected');
+  }
   const createdAtDate = new Date(weibo.created_at);
   const createdAtTimestampMs = createdAtDate.getTime();
   weibo.created_at_timestamp_ms = createdAtTimestampMs;
@@ -327,6 +331,9 @@ const handle27004 = async ({ weiboId, opt }) => {
   }
   // common
   const weiboUrl = `https://weibo.com/${data.user.id}/${data.id}`;
+  if (allConfig.runtime.collected[weiboUrl]) {
+    throw new Error('com.weibo | already collected');
+  }
   const createdAtDate = new Date(data.created_at);
   const createdAtTimestampMs = createdAtDate.getTime();
   data.created_at_timestamp_ms = createdAtTimestampMs;

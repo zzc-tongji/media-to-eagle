@@ -81,12 +81,52 @@ const main = async () => {
       }
     });
   }
-  await eagle.get('/api/library/history');
+  //
+  allConfig.runtime.collected = {};
+  const info = await eagle.get('/api/library/info');
+  const folderNameList = [
+    '.xiaohongshu.com',
+    '.instagram.com',
+    '.weibo.com',
+    '.x.com',
+    //
+    'xiaohongshu.com',
+    'instagram.com',
+    'weibo.com',
+    'x.com',
+  ];
+  folderNameList.map((folderName) => {
+    const folder = eagle.searchFolderPreOrder({ name: folderName, data: { children: info.data.folders } });
+    if (!folder) {
+      return;
+    }
+    folder.children.map((f) => {
+      let description;
+      try {
+        description = JSON.parse(f.description);
+      } catch (error) {
+        if (check.emptyString(f.description)) {
+          description = {};
+        } else {
+          const d = f.description.replaceAll(/\u003ca[\s]+?[\s\S]*?\u003e/g, '').replaceAll(/\u003c\/a\u003e/g, '');
+          description = JSON.parse(d);
+        }
+      }
+      //
+      if (description.url) {
+        allConfig.runtime.collected[description.url] = true;
+      }
+    });
+  });
+  //
+  fs.writeFileSync(path.resolve(allConfig.runtime.wkdir, 'setting.runtime.json'), JSON.stringify(allConfig, null, 2), { encoding: 'utf-8' });
   //
   // handle url
   //
   for (const url of urlList) {
+    let hit = false;
     for (const key in handlerList) {
+      if (hit) { continue; }
       const handler = handlerList[key];
       if (await handler.getUrl(url)) {
         try {
@@ -96,8 +136,10 @@ const main = async () => {
         } catch (error) {
           console.log(`${url} | ${error.message}`);
         }
+        hit = true;
       }
     }
+    if (!hit) { console.log(`${url} | handler not found`); }
   }
   //
   // clean

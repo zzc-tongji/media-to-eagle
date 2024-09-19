@@ -69,11 +69,15 @@ const getUserInfo = async (userXId) => {
 
 const save = async ({ textWithUrl }) => {
   // get url
-  let url = await getUrl(textWithUrl);
-  if (check.emptyString(url)) {
+  const inputUrl = await getUrl(textWithUrl);
+  if (check.emptyString(inputUrl)) {
     throw Error(`com.x | invalid text with url | textWithUrl = ${textWithUrl}`);
   }
-  const [ , userXId, tweetId ] = /x.com\/([\S]+)\/status\/([\d]+)/.exec(url);
+  const [ , userXId, tweetId ] = /x.com\/([\S]+)\/status\/([\d]+)/.exec(inputUrl);
+  const url = `https://x.com/${userXId}/status/${tweetId}`;
+  if (allConfig.runtime.collected[url]) {
+    throw new Error('com.x | already collected');
+  }
   // get html
   const opt = {};
   if (check.object(siteConfig.headerMap)) {

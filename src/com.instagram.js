@@ -80,28 +80,24 @@ const getUrl = (textWithUrl = '') => {
     return '';
   }
   let url = utils.urlRegex.exec(textWithUrl)?.[0] || '';
-  const valid = [
-    '/instagram.com/p/',
-    '/instagram.com/reel/',
-    '/www.instagram.com/p/',
-    '/www.instagram.com/reel/',
-  ].reduce((prev, curr) => {
-    return prev || url.includes(curr);
-  }, false);
-  if (!valid) {
+  if (!url) {
     return '';
   }
-  url = url.replace('/instagram.com/', '/www.instagram.com/');
-  url = url.split('?')[0];
-  url = url.split('#')[0];
-  return url;
+  const code = /\/(www\.|)instagram.com\/(p|reel)\/([0-9A-Za-z]+)/.exec(url)?.[3] || '';
+  if (!code) {
+    return '';
+  }
+  return `https://www.instagram.com/p/${code}/`;
 };
 
 const save = async ({ textWithUrl }) => {
   // get note url
-  const inputUrl = getUrl(textWithUrl);
-  if (check.emptyString(inputUrl)) {
+  const url = getUrl(textWithUrl);
+  if (check.emptyString(url)) {
     throw Error(`com.instagram | invalid text with url | textWithUrl = ${textWithUrl}`);
+  }
+  if (allConfig.runtime.collected[url]) {
+    throw new Error('com.instagram | already collected');
   }
   // parse data
   const opt = {};
@@ -120,10 +116,9 @@ const save = async ({ textWithUrl }) => {
   ];
   opt.cookieParam = siteConfig.cookieParam;
   //
-  const html = await utils.getHtmlByPuppeteer({ ...opt, url: inputUrl });
+  const html = await utils.getHtmlByPuppeteer({ ...opt, url });
   // get raw data of post (1)
   const $ = cheerio.load(html);
-  const url = $('head>meta[property="og:url"]')?.attr('content') || '';
   const code = url.split('/').filter(s => s).pop() || '';
   if (!code) {
     throw new Error(`com.instagram | invalid post format | code = ${code}`);
