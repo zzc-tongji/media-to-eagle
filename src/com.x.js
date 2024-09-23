@@ -33,8 +33,9 @@ const getUrl = (textWithUrl = '') => {
     return '';
   }
   //
-  if (/x.com\/([\S]+)\/status\/([\d]+)/.test(url)) {
-    return url;
+  const valid = /(mobile.|)(twitter.com|x.com)\/([\S]+)\/status\/([\d]+)/.exec(url);
+  if (valid) {
+    return `https://x.com/${valid[3]}/status/${valid[4]}`;
   }
   return '';
 };
@@ -59,7 +60,7 @@ const getUserInfo = async (userXId) => {
   const html = await utils.getHtmlByPuppeteer({ ...opt, url: `https://x.com/${userXId}` });
   //
   const $ = cheerio.load(html);
-  const jsonElement =  $('head>script[data-testid="UserProfileSchema-test"]:eq(0)');
+  const jsonElement = $('head>script[data-testid="UserProfileSchema-test"]:eq(0)');
   if (jsonElement.length <= 0) {
     return null;
   }
@@ -69,12 +70,11 @@ const getUserInfo = async (userXId) => {
 
 const save = async ({ textWithUrl }) => {
   // get url
-  const inputUrl = await getUrl(textWithUrl);
-  if (check.emptyString(inputUrl)) {
+  const url = await getUrl(textWithUrl);
+  if (check.emptyString(url)) {
     throw Error(`com.x | invalid text with url | textWithUrl = ${textWithUrl}`);
   }
-  const [ , userXId, tweetId ] = /x.com\/([\S]+)\/status\/([\d]+)/.exec(inputUrl);
-  const url = `https://x.com/${userXId}/status/${tweetId}`;
+  const [ , userXId, tweetId ] = /x.com\/([\S]+)\/status\/([\d]+)/.exec(url);
   if (allConfig.runtime.collected[url]) {
     throw new Error('com.x | already collected');
   }
