@@ -1,0 +1,214 @@
+import * as com_instagram from './com.instagram.js';
+import * as com_xiaohongshu from './com.xiaohongshu.js';
+import * as com_weibo from './com.weibo.js';
+import * as com_x from './com.x.js';
+import * as jp_ameblo from './jp.ameblo.js';
+//
+import check from 'check-types';
+import * as cheerio from 'cheerio';
+//
+import * as eagle from './eagle.js';
+import * as setting from './setting.js';
+import * as utils from './utils.js';
+
+let allConfig = {};
+let siteConfig = {
+  headerMap: {
+    'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36',
+  },
+  interval: 3000,
+};
+//
+const init = () => {
+  allConfig = setting.get();
+  siteConfig = allConfig.site['com.pinterest'];
+};
+
+const getUrl = (textWithUrl = '') => {
+  if (check.not.string(textWithUrl)) {
+    return '';
+  }
+  let url = utils.urlRegex.exec(textWithUrl)?.[0] || '';
+  const valid = /\/(www\.|)pinterest.com\/pin\/([0-9]+)/.exec(url);
+  if (!valid) {
+    return '';
+  }
+  url = url.split('?')[0];
+  url = url.split('#')[0];
+  return `https://www.pinterest.com/pin/${valid[2]}/`;
+};
+
+const save = async ({ textWithUrl }) => {
+  // get pin url
+  const url = getUrl(textWithUrl);
+  if (check.emptyString(url)) {
+    throw Error(`com.pinterest | invalid text with url | textWithUrl = ${textWithUrl}`);
+  }
+  if (allConfig.runtime.collected[url]) {
+    throw new Error('com.pinterest | already collected');
+  }
+  // parse data
+  const opt = {};
+  opt.fetchOption = {};
+  if (check.object(siteConfig.headerMap)) {
+    opt.fetchOption.headers = siteConfig.headerMap;
+  }
+  if (
+    (check.string(siteConfig.headerMap['User-Agent']) && check.not.emptyArray(siteConfig.headerMap['User-Agent'])) ||
+    (check.string(siteConfig.headerMap['user-agent']) && check.not.emptyArray(siteConfig.headerMap['user-agent']))
+  ) {
+    opt.randomUserAgent = false;
+  }
+  //
+  const html = await utils.getHtmlByFetch({ ...opt, url });
+  let $ = cheerio.load(html);
+  const selector = $('script[data-relay-response="true"]');
+  if (selector.length < 0) {
+    throw Error('com.pinterest | invalid pin format | element "<script data-relay-response="true" />" | not found');
+  }
+  let data = null;
+  for (let i = 0; i < selector.length; i++) {
+    try {
+      const json = JSON.parse(selector.eq(i).text());
+      if (json?.requestParameters?.name === 'CloseupDetailQuery') {
+        data = json?.response?.data?.v3GetPinQuery?.data;
+        break;
+      }
+    } catch {
+      continue;
+    }
+  }
+  if (!data) {
+    throw Error('com.pinterest | invalid pin format | element "<script data-relay-response="true" />" | should be (1) JSON string (2) .requestParameters.name = "CloseupDetailQuery"');
+  }
+  // handle
+  if (data.link) {
+    // handle referenced site
+    const handlerList = {
+      com_instagram,
+      com_xiaohongshu,
+      com_weibo,
+      com_x,
+      jp_ameblo,
+    };
+    for (const key in handlerList) {
+      const handler = handlerList[key];
+      if (await handler.getUrl(data.link)) {
+        try {
+          const message = await handler.save({ textWithUrl: data.link });
+          console.log(`${data.link} | ${message}`);
+        } catch (error) {
+          console.log(`${data.link} | ${error.message}`);
+        }
+        return 'com.pinterest | reference collected';
+      }
+    }
+  }
+  // validate data
+  if (data?.originPinner) {
+    if (check.not.string(data?.originPinner?.id) || check.emptyString(data?.originPinner?.id)) {
+      throw new Error(`com.pinterest | invalid pin format | data?.originPinner?.id | ${JSON.stringify(data)}`);
+    }
+    if (check.not.string(data?.originPinner?.username) || check.emptyString(data?.originPinner?.username)) {
+      throw new Error(`com.pinterest | invalid pin format | data?.originPinner?.username | ${JSON.stringify(data)}`);
+    }
+    if (check.not.string(data?.originPinner?.fullName) || check.emptyString(data?.originPinner?.fullName)) {
+      throw new Error(`com.pinterest | invalid pin format | data?.originPinner?.fullName | ${JSON.stringify(data)}`);
+    }
+  }
+  if (data?.pinner) {
+    if (check.not.string(data?.pinner?.id) || check.emptyString(data?.pinner?.id)) {
+      throw new Error(`com.pinterest | invalid pin format | data?.pinner?.id | ${JSON.stringify(data)}`);
+    }
+    if (check.not.string(data?.pinner?.username) || check.emptyString(data?.pinner?.username)) {
+      throw new Error(`com.pinterest | invalid pin format | data?.pinner?.username | ${JSON.stringify(data)}`);
+    }
+    if (check.not.string(data?.pinner?.fullName) || check.emptyString(data?.pinner?.fullName)) {
+      throw new Error(`com.pinterest | invalid pin format | data?.pinner?.fullName | ${JSON.stringify(data)}`);
+    }
+  }
+  if (check.not.string(data?.title)) {
+    throw new Error(`com.pinterest | invalid pin format | data?.title | ${JSON.stringify(data)}`);
+  }
+  if (check.not.string(data?.description)) {
+    throw new Error(`com.pinterest | invalid pin format | data?.description | ${JSON.stringify(data)}`);
+  }
+  if (check.not.string(data?.createdAt) || check.emptyString(data?.createdAt)) {
+    throw new Error(`com.pinterest | invalid pin format | data?.createdAt | ${JSON.stringify(data)}`);
+  }
+  if (check.not.array(data?.pinJoin?.visualAnnotation)) {
+    throw new Error(`com.pinterest | invalid pin format | data?.pinJoin?.visualAnnotation | ${JSON.stringify(data)}`);
+  }
+  if (check.not.array(data?.pinJoin?.visualAnnotation)) {
+    throw new Error(`com.pinterest | invalid pin format | data?.pinJoin?.visualAnnotation | ${JSON.stringify(data)}`);
+  }
+  if (check.not.array(data?.visualObjects)) {
+    throw new Error(`com.pinterest | invalid pin format | data?.visualObjects | ${JSON.stringify(data)}`);
+  }
+  if (data?.videos) {
+    if (check.not.string(data?.videos?.videoList?.v720P?.url) || check.emptyString(data?.videos?.videoList?.v720P?.url)) {
+      throw new Error(`com.pinterest | invalid pin format | data?.videos?.videoList?.v720P?.url | ${JSON.stringify(data)}`);
+    }
+  } else {
+    if (check.not.string(data?.imageSpec_orig?.url) || check.emptyString(data?.imageSpec_orig?.url)) {
+      throw new Error(`com.pinterest | invalid pin format | data?.imageSpec_orig?.url | ${JSON.stringify(data)}`);
+    }
+  }
+  //
+  const loggedIn = false;
+  const createdAtTime = new Date(data.createdAt);
+  const createdAtTimestampMs = createdAtTime.getTime();
+  const tagList = [
+    `_login=${loggedIn}`,
+    '_source=pinterest.com',
+    data.originPinner ? `_user_id=pinterest.com/${data.originPinner.id}` : null,
+    data.pinner ? `_user_id=pinterest.com/${data.pinner.id}` : null,
+    ...data.pinJoin.visualAnnotation.map(a => `_tag=pinterest.com/${a}`),
+    ...data.visualObjects.map(o => o.label ? `_tag=pinterest.com/${o.label}` : null).filter(t => t),
+    ...data.pinJoin.visualAnnotation.map(a => `_union_tag=${a}`),
+    ...data.visualObjects.map(o => o.label ? `_union_tag=${o.label}` : null).filter(t => t),
+    data.link ? '_reference=true' : undefined,
+  ].filter(t => t);
+  const annotation = {
+    pinner: [
+      data.originPinner ? { name: data.originPinner.fullName, pinterest_id: data.originPinner.username } : null,
+      data.pinner ? { name: data.pinner.fullName, pinterest_id: data.pinner.username } : null,
+    ].filter(t => t),
+    title: data?.richMetadata?.title?.trim() || data.title.trim() || undefined,
+    description: data?.richMetadata?.description?.trim() || data.description.trim() || undefined,
+  };
+  // folder
+  const folder = await eagle.updateFolder({ name: '.pinterest.com', parentName: '.import' });
+  const items = [];
+  if (data.videos) {
+    // video
+    items.push({
+      url: data.videos.videoList.v720P.url,
+      name: `${eagle.generateTitle(createdAtTimestampMs + 1)}`,
+      website: data.link ? data.link : url,
+      tags: tagList,
+      annotation: JSON.stringify({ ...annotation, media_url: data.videos.videoList.v720P.url }),
+    });
+  } else {
+    // image
+    items.push({
+      url: data.imageSpec_orig.url,
+      name: `${eagle.generateTitle(createdAtTime)}`,
+      website: data.link ? data.link : url,
+      tags: tagList,
+      annotation: JSON.stringify({ ...annotation, media_url: data.imageSpec_orig.url }),
+    });
+  }
+  const payload = {
+    items,
+    folderId: folder.id,
+  };
+  // add to eagle
+  await eagle.post('/api/item/addFromURLs', payload);
+  // interval
+  await utils.sleep(siteConfig.interval);
+  //
+  return `com.pinterest | ok${loggedIn ? ' | login' : ' | non-login'}`;
+};
+
+export { init, getUrl, save };

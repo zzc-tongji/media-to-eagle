@@ -9,6 +9,7 @@ import * as com_xiaohongshu from './com.xiaohongshu.js';
 import * as com_weibo from './com.weibo.js';
 import * as com_x from './com.x.js';
 import * as jp_ameblo from './jp.ameblo.js';
+import * as com_pinterest from './com.pinterest.js';
 //
 import * as eagle from './eagle.js';
 import * as setting from './setting.js';
@@ -60,6 +61,8 @@ const main = async () => {
   //
   eagle.init();
   const handlerList = {
+    com_pinterest,
+    //
     com_instagram,
     com_xiaohongshu,
     com_weibo,
@@ -123,6 +126,14 @@ const main = async () => {
       }
     });
   });
+  {
+    const [ { id: p0 }, { id: p1 } ] = [
+      await eagle.updateFolder({ name: 'pinterest.com' }),
+      await eagle.updateFolder({ name: '.pinterest.com', parentName: '.import' }),
+    ];
+    const { data } = await eagle.get('/api/item/list', `orderBy=NAME&folders=${p0},${p1}&limit=1000000`);
+    data.map(d => allConfig.runtime.collected[d.url] = true);
+  }
   //
   fs.writeFileSync(path.resolve(allConfig.runtime.wkdir, 'setting.runtime.json'), JSON.stringify(allConfig, null, 2), { encoding: 'utf-8' });
   //
