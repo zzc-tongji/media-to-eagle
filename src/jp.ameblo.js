@@ -26,13 +26,19 @@ const getUrl = (textWithUrl = '') => {
     return '';
   }
   let url = utils.urlRegex.exec(textWithUrl)?.[0] || '';
-  const valid = /\/(www\.|)ameblo.jp\/([\S]+)\/entry-([0-9]+)\.html/.exec(url);
-  if (!valid) {
-    return '';
+  let valid = /\/(www\.|)ameblo.jp\/([\S]+)\/entry-([0-9]+)\.html/.exec(url);
+  if (valid) {
+    url = url.split('?')[0];
+    url = url.split('#')[0];
+    return `https://ameblo.jp/${valid[2]}/entry-${valid[3]}.html`;
   }
-  url = url.split('?')[0];
-  url = url.split('#')[0];
-  return `https://ameblo.jp/${valid[2]}/entry-${valid[3]}.html`;
+  valid = /\/(www\.|)ameblo.jp\/([\S]+)\/image-([0-9]+)-([0-9]+)\.html/.exec(url);
+  if (valid) {
+    url = url.split('?')[0];
+    url = url.split('#')[0];
+    return `https://ameblo.jp/${valid[2]}/entry-${valid[3]}.html`;
+  }
+  return '';
 };
 
 const save = async ({ textWithUrl }) => {
