@@ -108,7 +108,7 @@ const save = async ({ textWithUrl }) => {
       imageUrlList.push(imgUrl);
     }
   }
-  const mediaCount = image.length;
+  const mediaCount = imageUrlList.length;
   //
   const tagList = [
     `_login=${loggedIn}`,
