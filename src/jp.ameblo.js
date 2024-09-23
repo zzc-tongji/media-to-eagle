@@ -26,13 +26,13 @@ const getUrl = (textWithUrl = '') => {
     return '';
   }
   let url = utils.urlRegex.exec(textWithUrl)?.[0] || '';
-  let valid = /\/(www\.|)ameblo.jp\/([\S]+)\/entry-([0-9]+)\.html/.exec(url);
+  let valid = /\/([\S]+\.|)ameblo.jp\/([\S]+)\/entry-([0-9]+)\.html/.exec(url);
   if (valid) {
     url = url.split('?')[0];
     url = url.split('#')[0];
     return `https://ameblo.jp/${valid[2]}/entry-${valid[3]}.html`;
   }
-  valid = /\/(www\.|)ameblo.jp\/([\S]+)\/image-([0-9]+)-([0-9]+)\.html/.exec(url);
+  valid = /\/([\S]+\.|)ameblo.jp\/([\S]+)\/image-([0-9]+)-([0-9]+)\.html/.exec(url);
   if (valid) {
     url = url.split('?')[0];
     url = url.split('#')[0];
@@ -108,7 +108,7 @@ const save = async ({ textWithUrl }) => {
       imageUrlList.push(imgUrl);
     }
   }
-  const mediaCount = image.length + 1;
+  const mediaCount = image.length;
   //
   const tagList = [
     `_login=${loggedIn}`,
