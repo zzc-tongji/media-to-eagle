@@ -96,6 +96,9 @@ const main = async () => {
       if (meta_count !== 1) {
         errorList.push(`${description.url} | ${folderName} | ${f.name} | meta file (json/html) not unique | meta_count = ${meta_count}`);
       }
+      if (description.media_count <= 0) {
+        errorList.push(`${description.url} | ${folderName} | ${f.name} | media_count = ${description.media_count}`);
+      }
       const image_count = item.data.filter(i => [ 'jpg', 'png', 'heic', 'webp' ].includes(i.ext)).length;
       const video_count = item.data.filter(i => [ 'mp4' ].includes(i.ext)).length;
       if (description.media_count !== image_count + video_count) {
