@@ -95,9 +95,16 @@ const save = async ({ textWithUrl }) => {
   // parse data
   let $ = cheerio.load(html);
   const loggedIn = $('body header button[aria-label="Account menu"]').length > 0;
-  const previousArticleElementCount = $('body main article div.r-m5arl1.r-16y2uox').length;
-  let article = $('body main article').eq(previousArticleElementCount);
-  if (article.length <= 0) {
+  const allArticle = $('body main article');
+  let article = null;
+  for (let i = 0; i < allArticle.length; i++) {
+    const a = allArticle.eq(i);
+    if (a.parent().children().length >= 2) {
+      article = a;
+      break;
+    }
+  }
+  if (!article) {
     throw Error('com.x | tweet not found | element "<article />" not found');
   }
   let articleHtml = article.prop('outerHTML');

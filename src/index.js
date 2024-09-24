@@ -128,7 +128,7 @@ const main = async () => {
   });
   {
     // pinterest
-    allConfig.runtime.collected = {};
+    allConfig.runtime.collectedPinterestMedia = {};
     const [ { id: p0 }, { id: p1 } ] = [
       await eagle.updateFolder({ name: 'pinterest.com' }),
       await eagle.updateFolder({ name: '.pinterest.com', parentName: '.import' }),
@@ -138,20 +138,20 @@ const main = async () => {
       // URL
       allConfig.runtime.collected[d.url] = true;
       // media ID
-      let description;
+      let annotation;
       try {
-        description = JSON.parse(d.description);
+        annotation = JSON.parse(d.annotation);
       } catch (error) {
-        if (check.emptyString(d.description)) {
-          description = {};
+        if (check.emptyString(d.annotation)) {
+          annotation = {};
         } else {
-          const j = d.description.replaceAll(/\u003ca[\s]+?[\s\S]*?\u003e/g, '').replaceAll(/\u003c\/a\u003e/g, '');
-          description = JSON.parse(j);
+          const j = d.annotation.replaceAll(/\u003ca[\s]+?[\s\S]*?\u003e/g, '').replaceAll(/\u003c\/a\u003e/g, '');
+          annotation = JSON.parse(j);
         }
       }
       //
-      if (description.media_url) {
-        allConfig.runtime.collectedPinterestMedia[description.media_url.split('/').filter(s => s).pop()] = true;
+      if (annotation.media_url) {
+        allConfig.runtime.collectedPinterestMedia[annotation.media_url.split('/').filter(s => s).pop()] = true;
       }
     });
   }
