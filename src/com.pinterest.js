@@ -155,9 +155,11 @@ const save = async ({ textWithUrl }) => {
     }
   }
   //
+  const mediaUrl = data.videos ?  data.videos.videoList.v720P.url : data.imageSpec_orig.url;
+  if (allConfig.runtime.collectedPinterestMedia[mediaUrl]) {
+    throw new Error('com.pinterest | already collected');
+  }
   const loggedIn = false;
-  const createdAtTime = new Date(data.createdAt);
-  const createdAtTimestampMs = createdAtTime.getTime();
   const tagList = [
     `_login=${loggedIn}`,
     '_source=pinterest.com',
@@ -179,28 +181,14 @@ const save = async ({ textWithUrl }) => {
   };
   // folder
   const folder = await eagle.updateFolder({ name: '.pinterest.com', parentName: '.import' });
-  const items = [];
-  if (data.videos) {
-    // video
-    items.push({
-      url: data.videos.videoList.v720P.url,
-      name: `${eagle.generateTitle(createdAtTimestampMs + 1)}`,
-      website: data.link ? data.link : url,
-      tags: tagList,
-      annotation: JSON.stringify({ ...annotation, media_url: data.videos.videoList.v720P.url }),
-    });
-  } else {
-    // image
-    items.push({
-      url: data.imageSpec_orig.url,
-      name: `${eagle.generateTitle(createdAtTime)}`,
-      website: data.link ? data.link : url,
-      tags: tagList,
-      annotation: JSON.stringify({ ...annotation, media_url: data.imageSpec_orig.url }),
-    });
-  }
   const payload = {
-    items,
+    items: [ {
+      url: mediaUrl,
+      name: `${eagle.generateTitle(new Date(data.createdAt))}`,
+      website: data.link ? data.link : url,
+      tags: tagList,
+      annotation: JSON.stringify({ ...annotation, media_url: mediaUrl }),
+    } ],
     folderId: folder.id,
   };
   // add to eagle

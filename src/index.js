@@ -127,12 +127,33 @@ const main = async () => {
     });
   });
   {
+    // pinterest
+    allConfig.runtime.collected = {};
     const [ { id: p0 }, { id: p1 } ] = [
       await eagle.updateFolder({ name: 'pinterest.com' }),
       await eagle.updateFolder({ name: '.pinterest.com', parentName: '.import' }),
     ];
     const { data } = await eagle.get('/api/item/list', `orderBy=NAME&folders=${p0},${p1}&limit=1000000`);
-    data.map(d => allConfig.runtime.collected[d.url] = true);
+    data.map(d => {
+      // URL
+      allConfig.runtime.collected[d.url] = true;
+      // media ID
+      let description;
+      try {
+        description = JSON.parse(d.description);
+      } catch (error) {
+        if (check.emptyString(d.description)) {
+          description = {};
+        } else {
+          const j = d.description.replaceAll(/\u003ca[\s]+?[\s\S]*?\u003e/g, '').replaceAll(/\u003c\/a\u003e/g, '');
+          description = JSON.parse(j);
+        }
+      }
+      //
+      if (description.media_url) {
+        allConfig.runtime.collectedPinterestMedia[description.media_url.split('/').filter(s => s).pop()] = true;
+      }
+    });
   }
   //
   fs.writeFileSync(path.resolve(allConfig.runtime.wkdir, 'setting.runtime.json'), JSON.stringify(allConfig, null, 2), { encoding: 'utf-8' });
