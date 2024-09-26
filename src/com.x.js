@@ -264,6 +264,7 @@ const save = async ({ textWithUrl }) => {
   }
   // add to eagle
   await eagle.post('/api/item/addFromURLs', payload);
+  allConfig.runtime.collected[url] = true;
   // interval
   await utils.sleep(siteConfig.interval);
   //

@@ -452,6 +452,7 @@ const handle27004 = async ({ weiboId, opt }) => {
   }
   // add to eagle
   await eagle.post('/api/item/addFromURLs', payload);
+  allConfig.runtime.collected[weiboUrl] = true;
   // interval
   await utils.sleep(siteConfig.interval);
   //

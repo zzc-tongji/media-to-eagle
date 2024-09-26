@@ -181,11 +181,12 @@ const save = async ({ textWithUrl }) => {
   };
   // folder
   const folder = await eagle.updateFolder({ name: '.pinterest.com', parentName: '.import' });
+  const website = data.link ? data.link : url;
   const payload = {
     items: [ {
       url: mediaUrl,
       name: `${eagle.generateTitle(new Date(data.createdAt))}`,
-      website: data.link ? data.link : url,
+      website,
       tags: tagList,
       annotation: JSON.stringify({ ...annotation, media_url: mediaUrl }),
     } ],
@@ -193,6 +194,7 @@ const save = async ({ textWithUrl }) => {
   };
   // add to eagle
   await eagle.post('/api/item/addFromURLs', payload);
+  allConfig.runtime.collected[website] = true;
   // interval
   await utils.sleep(siteConfig.interval);
   //
