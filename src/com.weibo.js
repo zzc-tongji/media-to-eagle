@@ -4,6 +4,7 @@ import * as path from 'node:path';
 import check from 'check-types';
 import * as cheerio from 'cheerio';
 //
+import * as collection from './collection.js';
 import * as eagle from './eagle.js';
 import * as setting from './setting.js';
 import * as utils from './utils.js';
@@ -163,7 +164,7 @@ const save = async ({ textWithUrl }) => {
   // common
   weiboUrl = `https://weibo.com/${weibo.user.idstr}/${weibo.idstr}`;
   const weiboShortUrl = `https://weibo.com/${weibo.user.idstr}/${weibo.mblogid}`;
-  if (allConfig.runtime.collected[weiboUrl] || allConfig.runtime.collected[weiboShortUrl]) {
+  if (collection.has(weiboUrl) || collection.has(weiboShortUrl)) {
     throw new Error('com.weibo | already collected');
   }
   const createdAtDate = new Date(weibo.created_at);
@@ -331,7 +332,7 @@ const handle27004 = async ({ weiboId, opt }) => {
   }
   // common
   const weiboUrl = `https://weibo.com/${data.user.id}/${data.id}`;
-  if (allConfig.runtime.collected[weiboUrl]) {
+  if (collection.has(weiboUrl)) {
     throw new Error('com.weibo | already collected');
   }
   const createdAtDate = new Date(data.created_at);
@@ -452,7 +453,7 @@ const handle27004 = async ({ weiboId, opt }) => {
   }
   // add to eagle
   await eagle.post('/api/item/addFromURLs', payload);
-  allConfig.runtime.collected[weiboUrl] = true;
+  collection.add(weiboUrl);
   // interval
   await utils.sleep(siteConfig.interval);
   //

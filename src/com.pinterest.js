@@ -7,6 +7,7 @@ import * as jp_ameblo from './jp.ameblo.js';
 import check from 'check-types';
 import * as cheerio from 'cheerio';
 //
+import * as collection from './collection.js';
 import * as eagle from './eagle.js';
 import * as setting from './setting.js';
 import * as utils from './utils.js';
@@ -44,7 +45,7 @@ const save = async ({ textWithUrl }) => {
   if (check.emptyString(url)) {
     throw Error(`com.pinterest | invalid text with url | textWithUrl = ${textWithUrl}`);
   }
-  if (allConfig.runtime.collected[url]) {
+  if (collection.has(url)) {
     throw new Error('com.pinterest | already collected');
   }
   // parse data
@@ -156,7 +157,7 @@ const save = async ({ textWithUrl }) => {
   }
   //
   const mediaUrl = data.videos ?  data.videos.videoList.v720P.url : data.imageSpec_orig.url;
-  if (allConfig.runtime.collectedPinterestMedia[mediaUrl]) {
+  if (collection.has(mediaUrl)) {
     throw new Error('com.pinterest | already collected');
   }
   const loggedIn = false;
@@ -194,7 +195,8 @@ const save = async ({ textWithUrl }) => {
   };
   // add to eagle
   await eagle.post('/api/item/addFromURLs', payload);
-  allConfig.runtime.collected[website] = true;
+  collection.add(website);
+  collection.add(mediaUrl);
   // interval
   await utils.sleep(siteConfig.interval);
   //

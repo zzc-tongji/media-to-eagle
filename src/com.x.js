@@ -4,6 +4,7 @@ import * as path from 'node:path';
 import check from 'check-types';
 import * as cheerio from 'cheerio';
 //
+import * as collection from './collection.js';
 import * as eagle from './eagle.js';
 import * as setting from './setting.js';
 import * as utils from './utils.js';
@@ -75,7 +76,7 @@ const save = async ({ textWithUrl }) => {
     throw Error(`com.x | invalid text with url | textWithUrl = ${textWithUrl}`);
   }
   const [ , userXId, tweetId ] = /x.com\/([\S]+)\/status\/([\d]+)/.exec(url);
-  if (allConfig.runtime.collected[url]) {
+  if (collection.has(url)) {
     throw new Error('com.x | already collected');
   }
   // get html
@@ -264,7 +265,7 @@ const save = async ({ textWithUrl }) => {
   }
   // add to eagle
   await eagle.post('/api/item/addFromURLs', payload);
-  allConfig.runtime.collected[url] = true;
+  collection.add(url);
   // interval
   await utils.sleep(siteConfig.interval);
   //

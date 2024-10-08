@@ -4,6 +4,7 @@ import * as path from 'node:path';
 import check from 'check-types';
 import * as cheerio from 'cheerio';
 //
+import * as collection from './collection.js';
 import * as eagle from './eagle.js';
 import * as setting from './setting.js';
 import * as utils from './utils.js';
@@ -114,7 +115,7 @@ const save = async ({ textWithUrl }) => {
     throw new Error(`com.xiaohongshu | invalid note format | note?.atUserList | ${JSON.stringify(note)}`);
   }
   const website = `https://www.xiaohongshu.com/explore/${id}`;
-  if (allConfig.runtime.collected[website]) {
+  if (collection.has(website)) {
     throw new Error('com.xiaohongshu | already collected');
   }
   // get red id
@@ -230,7 +231,7 @@ const save = async ({ textWithUrl }) => {
   }
   // add to eagle
   await eagle.post('/api/item/addFromURLs', payload);
-  allConfig.runtime.collected[website] = true;
+  collection.add(website);
   // interval
   await utils.sleep(siteConfig.interval);
   //

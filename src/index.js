@@ -11,6 +11,7 @@ import * as com_x from './com.x.js';
 import * as jp_ameblo from './jp.ameblo.js';
 import * as com_pinterest from './com.pinterest.js';
 //
+import * as collection from './collection.js';
 import * as eagle from './eagle.js';
 import * as setting from './setting.js';
 import { pptr } from './utils.js';
@@ -25,6 +26,7 @@ const main = async () => {
   parser.add_argument('--url', '-u', { help: 'url for fetching' });
   parser.add_argument('--list', '-l', { help: 'url list for fetching, splitted by linebreak, absolute path OR relative path based on "--wkdir"', default: './list.txt' });
   parser.add_argument('--setting', '-s', { help: 'setting for fetching, absolute path OR relative path based on "--wkdir"', default: './setting.json' });
+  parser.add_argument('--collection', '-c', { help: 'setting for fetching, absolute path OR relative path based on "--wkdir"', default: './collection.txt' });
   parser.add_argument('--wkdir', '-w', { help: 'working directory', required: true });
   const argv = parser.parse_args();
   // url list
@@ -44,16 +46,21 @@ const main = async () => {
       console.log(`invalid parameter | --list="${argv.list}" --wkdir="${argv.wkdir}" | no such text file`);
     }
   }
-  // setting
+  // setting & collection
   let allConfig = null;
   try {
     const w = path.resolve(argv.wkdir);
     const s = path.isAbsolute(argv.setting) ? argv.setting : path.resolve(w, argv.setting);
+    const c = path.isAbsolute(argv.collection) ? argv.collection : path.resolve(w, argv.collection);
+    //
     setting.post(JSON.parse(fs.readFileSync(s, { encoding: 'utf-8' })));
     allConfig = setting.get();
-    allConfig.runtime = { wkdir: w, setting: s };
+    allConfig.runtime = { wkdir: w, setting: s, collection: c };
+    //
+    collection.load(c);
   } catch (error) {
-    console.log(`invalid parameter | --setting="${argv.setting}" --wkdir="${argv.wkdir}" | ${error.message}`);
+    console.log(error.message);
+    console.log(`invalid parameter | --setting="${argv.setting}" --collection="${argv.collection}" --wkdir="${argv.wkdir}" | ${error.message}`);
     return 1;
   }
   //
@@ -88,7 +95,6 @@ const main = async () => {
     });
   }
   //
-  allConfig.runtime.collected = {};
   const info = await eagle.get('/api/library/info');
   const folderNameList = [
     '.xiaohongshu.com',
@@ -122,13 +128,12 @@ const main = async () => {
       }
       //
       if (description.url) {
-        allConfig.runtime.collected[description.url] = true;
+        collection.add(description.url);
       }
     });
   });
   {
     // pinterest
-    allConfig.runtime.collectedPinterestMedia = {};
     const [ { id: p0 }, { id: p1 } ] = [
       await eagle.updateFolder({ name: 'pinterest.com' }),
       await eagle.updateFolder({ name: '.pinterest.com', parentName: '.import' }),
@@ -136,7 +141,7 @@ const main = async () => {
     const { data } = await eagle.get('/api/item/list', `orderBy=NAME&folders=${p0},${p1}&limit=1000000`);
     data.map(d => {
       // URL
-      allConfig.runtime.collected[d.url] = true;
+      collection.add(d.url);
       // media ID
       let annotation;
       try {
@@ -151,7 +156,7 @@ const main = async () => {
       }
       //
       if (annotation.media_url) {
-        allConfig.runtime.collectedPinterestMedia[annotation.media_url.split('/').filter(s => s).pop()] = true;
+        collection.add(annotation.media_url);
       }
     });
   }

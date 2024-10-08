@@ -4,6 +4,7 @@ import * as path from 'node:path';
 import check from 'check-types';
 import * as cheerio from 'cheerio';
 //
+import * as collection from './collection.js';
 import * as eagle from './eagle.js';
 import * as setting from './setting.js';
 import * as utils from './utils.js';
@@ -96,7 +97,7 @@ const save = async ({ textWithUrl }) => {
   if (check.emptyString(url)) {
     throw Error(`com.instagram | invalid text with url | textWithUrl = ${textWithUrl}`);
   }
-  if (allConfig.runtime.collected[url]) {
+  if (collection.has(url)) {
     throw new Error('com.instagram | already collected');
   }
   // parse data
@@ -373,7 +374,7 @@ const save = async ({ textWithUrl }) => {
     }
   }
   await eagle.post('/api/item/addFromURLs', payload);
-  allConfig.runtime.collected[url] = true;
+  collection.add(url);
   // interval
   await utils.sleep(siteConfig.interval);
   //
