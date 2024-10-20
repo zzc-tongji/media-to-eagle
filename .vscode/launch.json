@@ -24,6 +24,13 @@
       "name": "Check Library",
       "program": "${workspaceFolder}\\src\\tool\\check-library.js",
       "args": ["--wkdir=${workspaceFolder}\\wkdir"]
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Extract Pinback to List",
+      "program": "${workspaceFolder}\\src\\tool\\extract-pinback-to-list.js",
+      "args": ["--wkdir=${workspaceFolder}\\wkdir"]
     }
   ]
 }
