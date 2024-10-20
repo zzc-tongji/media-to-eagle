@@ -4,24 +4,24 @@ let path = './collection.txt';
 let collection = null;
 
 const load = (p = path) => {
-  if (!fs.existsSync(p)) {
+  if (p !== path) {
+    path = p;
+  }
+  if (!fs.existsSync(path)) {
     collection = {};
-    fs.writeFileSync(p, '', { encoding: 'utf-8' });
+    fs.writeFileSync(path, '', { encoding: 'utf-8' });
     return;
   }
-  if (!fs.lstatSync(p).isFile()) {
-    throw new Error(`collection.js | path "${p}" should be a file`);
+  if (!fs.lstatSync(path).isFile()) {
+    throw new Error(`collection.js | path "${path}" should be a file`);
   }
-  const content = fs.readFileSync(p, { encoding: 'utf-8' });
+  const content = fs.readFileSync(path, { encoding: 'utf-8' });
   content.split(/\r?\n/).map((line) => {
     if (!collection) {
       collection = {};
     }
     collection[line] = true;
   });
-  if (p !== path) {
-    path = p;
-  }
 };
 
 const has = (url) => {
