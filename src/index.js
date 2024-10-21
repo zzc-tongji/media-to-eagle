@@ -165,7 +165,8 @@ const main = async () => {
   //
   // handle url
   //
-  for (const url of urlList) {
+  for (let i = 0; i < urlList.length; i++) {
+    const url = urlList[i];
     let hit = false;
     for (const key in handlerList) {
       const handler = handlerList[key];
@@ -173,10 +174,10 @@ const main = async () => {
         hit = true;
         try {
           const message = await handler.save({ textWithUrl: url });
-          console.log(`${url} | ${message}`);
+          console.log(`✅ [${i + 1}/${urlList.length}] ${url} | ${message}`);
           break;
         } catch (error) {
-          console.log(`${url} | ${error.message}`);
+          console.log(`${error?.message?.includes('collected') ? '✅' : '🛑'} [${i + 1}/${urlList.length}] ${url} | ${error.message}`);
         }
       }
     }

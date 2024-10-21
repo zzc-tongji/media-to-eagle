@@ -97,9 +97,9 @@ const save = async ({ textWithUrl }) => {
       if (await handler.getUrl(data.link)) {
         try {
           const message = await handler.save({ textWithUrl: data.link });
-          console.log(`${data.link} | ${message}`);
+          console.log(`✅ [ref] ${data.link} | ${message}`);
         } catch (error) {
-          console.log(`${data.link} | ${error.message}`);
+          console.log(`${error?.message?.includes('collected') ? '✅' : '🛑'} [ref] ${data.link} | ${error.message}`);
         }
         return 'com.pinterest | reference collected';
       }
