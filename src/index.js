@@ -177,7 +177,7 @@ const main = async () => {
           console.log(`✅ [${i + 1}/${urlList.length}] ${url} | ${message}`);
           break;
         } catch (error) {
-          console.log(`${error?.message?.includes('collected') ? '✅' : '🛑'} [${i + 1}/${urlList.length}] ${url} | ${error.message}`);
+          console.log(`${error?.message?.includes('collected') ? '☑️' : '🛑'} [${i + 1}/${urlList.length}] ${url} | ${error.message}`);
         }
       }
     }

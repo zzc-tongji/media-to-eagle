@@ -81,6 +81,11 @@ const save = async ({ textWithUrl }) => {
     opt.randomUserAgent = false;
   }
   //
+  if (url.includes('/www.xiaohongshu.com/explore/')) {
+    if (collection.has(url)) {
+      throw new Error('com.xiaohongshu | already collected');
+    }
+  }
   const html = await utils.getHtmlByFetch({ ...opt, url });
   const $ = cheerio.load(html);
   let data = $('html body script:contains("window.__INITIAL_STATE__")').text();
