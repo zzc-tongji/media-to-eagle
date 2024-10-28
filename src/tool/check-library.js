@@ -107,7 +107,7 @@ const main = async () => {
     }
   }
   fs.writeFileSync(path.resolve(argv.wkdir, 'library.error.txt'), errorList.join('\n'), { encoding: 'utf-8' });
-  console.log(`Result is located at "${path.resolve(argv.wkdir, 'library.error.txt')}".`);
+  console.log(`finished with ${errorList.length} error(s) found => "${path.resolve(argv.wkdir, 'library.error.txt')}"`);
 };
 
 main();
