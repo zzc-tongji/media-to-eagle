@@ -42,12 +42,12 @@ const main = async () => {
     '.ameblo.jp',
     '.pinterest.com',
     //
-    // 'xiaohongshu.com',
-    // 'instagram.com',
-    // 'weibo.com',
-    // 'x.com',
-    // 'ameblo.jp',
-    // 'pinterest.com',
+    'xiaohongshu.com',
+    'instagram.com',
+    'weibo.com',
+    'x.com',
+    'ameblo.jp',
+    'pinterest.com',
   ];
   for (let i = 0; i < folderNameList.length; i++) {
     const folderName = folderNameList[i];

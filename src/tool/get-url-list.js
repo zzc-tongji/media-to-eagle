@@ -34,10 +34,10 @@ const main = async () => {
     throw new Error(`get-url-list.js | eagle | GET /api/library/info | ${info.message}`);
   }
   const folderNameList = [
-    '.xiaohongshu.com',
-    '.instagram.com',
-    '.weibo.com',
-    '.x.com',
+    // '.xiaohongshu.com',
+    // '.instagram.com',
+    // '.weibo.com',
+    // '.x.com',
     //
     'xiaohongshu.com',
     'instagram.com',

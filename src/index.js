@@ -59,7 +59,6 @@ const main = async () => {
     //
     collection.load(c);
   } catch (error) {
-    console.log(error.message);
     console.log(`invalid parameter | --setting="${argv.setting}" --collection="${argv.collection}" --wkdir="${argv.wkdir}" | ${error.message}`);
     return 1;
   }
