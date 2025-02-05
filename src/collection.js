@@ -1,6 +1,6 @@
 import * as fs from 'node:fs';
 
-let path = './collection.txt';
+let path = './collection.media-to-eagle.txt';
 let collection = null;
 
 const load = (p = path) => {

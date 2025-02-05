@@ -26,7 +26,7 @@ const main = async () => {
   parser.add_argument('--url', '-u', { help: 'url for fetching' });
   parser.add_argument('--list', '-l', { help: 'url list for fetching, splitted by linebreak, absolute path OR relative path based on "--wkdir"', default: './list.media-to-eagle.txt' });
   parser.add_argument('--setting', '-s', { help: 'setting for fetching, absolute path OR relative path based on "--wkdir"', default: './setting.media-to-eagle.json' });
-  parser.add_argument('--collection', '-c', { help: 'setting for fetching, absolute path OR relative path based on "--wkdir"', default: './collection.txt' });
+  parser.add_argument('--collection', '-c', { help: 'setting for fetching, absolute path OR relative path based on "--wkdir"', default: './collection.media-to-eagle.txt' });
   parser.add_argument('--wkdir', '-w', { help: 'working directory', required: true });
   const argv = parser.parse_args();
   // url list
