@@ -3,8 +3,10 @@
   "version": "1.0.0",
   "scripts": {
     "eslint": "eslint --fix .",
+    "pkg": "pkg",
     "start": "node src/index.js",
-    "pkg": "pkg"
+    "check-library": "node src/tool/check-library.js",
+    "get-url-list": "node src/tool/get-url-list.js"
   },
   "type": "module",
   "repository": "https://github.com/zzc-tongji/media-to-eagle",
