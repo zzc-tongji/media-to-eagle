@@ -12,7 +12,7 @@ const main = async () => {
   const parser = new ArgumentParser({
     description: 'Get URL List',
   });
-  parser.add_argument('--setting', '-s', { help: 'setting for fetching, absolute path OR relative path based on "--wkdir"', default: './setting.json' });
+  parser.add_argument('--setting', '-s', { help: 'setting for fetching, absolute path OR relative path based on "--wkdir"', default: './setting.media-to-eagle.json' });
   parser.add_argument('--wkdir', '-w', { help: 'working directory', required: true });
   const argv = parser.parse_args();
   //
