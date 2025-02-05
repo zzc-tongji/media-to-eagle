@@ -160,8 +160,6 @@ const main = async () => {
     });
   }
   //
-  fs.writeFileSync(path.resolve(allConfig.runtime.wkdir, 'setting.runtime.json'), JSON.stringify(allConfig, null, 2), { encoding: 'utf-8' });
-  //
   // handle url
   //
   for (let i = 0; i < urlList.length; i++) {
