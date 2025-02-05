@@ -29,22 +29,21 @@ const getUrl = (textWithUrl = '') => {
   if (check.not.string(textWithUrl)) {
     return '';
   }
-  let url = utils.urlRegex.exec(textWithUrl)?.[0] || '';
-  const valid = /\/(www\.|)pinterest.com\/pin\/([0-9]+)/.exec(url);
+  const valid = /\/(www\.|)pinterest.com\/pin\/([0-9]+)/.exec(utils.urlRegex.exec(textWithUrl)?.[0] || '');
   if (!valid) {
     return '';
   }
-  url = url.split('?')[0];
-  url = url.split('#')[0];
-  return `https://www.pinterest.com/pin/${valid[2]}/`;
+  const u = `https://www.pinterest.com/pin/${valid[2]}/`;
+  return { url: u, fetchUrl: u };
 };
 
 const save = async ({ textWithUrl }) => {
   // get pin url
-  const url = getUrl(textWithUrl);
-  if (check.emptyString(url)) {
+  let temp = getUrl(textWithUrl);
+  if (!temp) {
     throw Error(`com.pinterest | invalid text with url | textWithUrl = ${textWithUrl}`);
   }
+  const { url, fetchUrl } = temp;
   if (collection.has(url)) {
     throw new Error('com.pinterest | already collected');
   }
@@ -61,7 +60,7 @@ const save = async ({ textWithUrl }) => {
     opt.randomUserAgent = false;
   }
   //
-  const html = await utils.getHtmlByFetch({ ...opt, url });
+  const html = await utils.getHtmlByFetch({ ...opt, url: fetchUrl });
   let $ = cheerio.load(html);
   const selector = $('script[data-relay-response="true"]');
   if (selector.length < 0) {
@@ -156,7 +155,7 @@ const save = async ({ textWithUrl }) => {
     }
   }
   //
-  const mediaUrl = data.videos ?  data.videos.videoList.v720P.url : data.imageSpec_orig.url;
+  const mediaUrl = data.videos ? data.videos.videoList.v720P.url : data.imageSpec_orig.url;
   if (collection.has(mediaUrl)) {
     throw new Error('com.pinterest | already collected');
   }

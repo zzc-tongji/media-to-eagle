@@ -28,15 +28,15 @@ const init = () => {
 
 const getUrl = async (textWithUrl = '') => {
   if (check.not.string(textWithUrl)) {
-    return '';
+    return null;
   }
   const url = utils.urlRegex.exec(textWithUrl)?.[0] || '';
   if (check.emptyString(url)) {
-    return '';
+    return null;
   }
   //
   if (/weibo.com\/[0-9]+\/[0-9A-Za-z]+\/?/.test(url)) {
-    return url;
+    return { url, fetchUrl: url };
   }
   //
   if (/m.weibo.cn\/(status|detail)\/[0-9A-Za-z]+\/?/.test(url)) {
@@ -47,9 +47,10 @@ const getUrl = async (textWithUrl = '') => {
     const html = await utils.getHtmlByFetch({ ...opt, url });
     const temp = /"profile_url":[\s]*"([\s\S]*)\/u\/([0-9A-Za-z]+)\?([\s\S]*)lfid=([0-9A-Za-z]+)([\s\S]*)"/.exec(html);
     if (!temp) {
-      return '';
+      return null;
     }
-    return `https://weibo.com/${temp[2]}/${temp[4]}`;
+    const u = `https://weibo.com/${temp[2]}/${temp[4]}`;
+    return { url: u, fetchUrl: u };
   }
   //
   if (/t.cn\/[0-9A-Za-z]+\/?/.test(url)) {
@@ -59,20 +60,20 @@ const getUrl = async (textWithUrl = '') => {
     };
     const u = await utils.getRedirectByFetch({ ...opt, url });
     if (!/weibo.com\/[0-9]+\/[0-9A-Za-z]+\/?/.test(u)) {
-      return '';
+      return null;
     }
-    return u;
+    return { url: u, fetchUrl: u };
   }
-  return '';
+  return null;
 };
 
 const save = async ({ textWithUrl }) => {
   // get ajax url
-  let weiboUrl = await getUrl(textWithUrl);
-  if (check.emptyString(weiboUrl)) {
+  let temp = await getUrl(textWithUrl);
+  if (!temp) {
     throw Error(`com.weibo | invalid text with url | textWithUrl = ${textWithUrl}`);
   }
-  const [ , creatorId, weiboId ] = /weibo.com\/([0-9]+)\/([0-9A-Za-z]+)\/?/.exec(weiboUrl);
+  const [ , creatorId, weiboId ] = /weibo.com\/([0-9]+)\/([0-9A-Za-z]+)\/?/.exec(temp.url);
   const url = `https://weibo.com/ajax/statuses/show?id=${weiboId}`;
   // prepare option
   const opt = {};
@@ -162,7 +163,7 @@ const save = async ({ textWithUrl }) => {
     }
   }
   // common
-  weiboUrl = `https://weibo.com/${weibo.user.idstr}/${weibo.idstr}`;
+  const weiboUrl = `https://weibo.com/${weibo.user.idstr}/${weibo.idstr}`;
   const weiboShortUrl = `https://weibo.com/${weibo.user.idstr}/${weibo.mblogid}`;
   if (collection.has(weiboUrl) || collection.has(weiboShortUrl)) {
     throw new Error('com.weibo | already collected');

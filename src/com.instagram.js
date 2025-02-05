@@ -80,23 +80,25 @@ const getUrl = (textWithUrl = '') => {
   if (check.not.string(textWithUrl)) {
     return '';
   }
-  let url = utils.urlRegex.exec(textWithUrl)?.[0] || '';
-  if (!url) {
+  let u = utils.urlRegex.exec(textWithUrl)?.[0] || '';
+  if (!u) {
     return '';
   }
-  const code = /\/(www\.|)instagram.com\/(p|reel)\/([0-9A-Za-z]+)/.exec(url)?.[3] || '';
+  const code = /\/(www\.|)instagram.com\/(p|reel)\/([0-9A-Za-z]+)/.exec(u)?.[3] || '';
   if (!code) {
     return '';
   }
-  return `https://www.instagram.com/p/${code}/`;
+  const url = `https://www.instagram.com/p/${code}/`;
+  return { url, fetchUrl: url };
 };
 
 const save = async ({ textWithUrl }) => {
   // get note url
-  const url = getUrl(textWithUrl);
-  if (check.emptyString(url)) {
+  let temp = getUrl(textWithUrl);
+  if (!temp) {
     throw Error(`com.instagram | invalid text with url | textWithUrl = ${textWithUrl}`);
   }
+  const { url, fetchUrl } = temp;
   if (collection.has(url)) {
     throw new Error('com.instagram | already collected');
   }
@@ -117,7 +119,7 @@ const save = async ({ textWithUrl }) => {
   ];
   opt.cookieParam = siteConfig.cookieParam;
   //
-  const html = await utils.getHtmlByPuppeteer({ ...opt, url });
+  const html = await utils.getHtmlByPuppeteer({ ...opt, url: fetchUrl });
   // get raw data of post (1)
   const $ = cheerio.load(html);
   const code = url.split('/').filter(s => s).pop() || '';

@@ -27,18 +27,19 @@ const init = () => {
 
 const getUrl = (textWithUrl = '') => {
   if (check.not.string(textWithUrl)) {
-    return '';
+    return null;
   }
   const url = utils.urlRegex.exec(textWithUrl)?.[0] || '';
   if (check.emptyString(url)) {
-    return '';
+    return null;
   }
   //
   const valid = /(mobile.|)(twitter.com|x.com)\/([\S]+)\/status\/([\d]+)/.exec(url);
   if (valid) {
-    return `https://x.com/${valid[3]}/status/${valid[4]}`;
+    const u = `https://x.com/${valid[3]}/status/${valid[4]}`;
+    return { url: u, fetchUrl: u };
   }
-  return '';
+  return null;
 };
 
 const getUserInfo = async (userXId) => {
@@ -71,10 +72,11 @@ const getUserInfo = async (userXId) => {
 
 const save = async ({ textWithUrl }) => {
   // get url
-  const url = await getUrl(textWithUrl);
-  if (check.emptyString(url)) {
+  let temp = await getUrl(textWithUrl);
+  if (!temp) {
     throw Error(`com.x | invalid text with url | textWithUrl = ${textWithUrl}`);
   }
+  const { url, fetchUrl } = temp;
   const [ , userXId, tweetId ] = /x.com\/([\S]+)\/status\/([\d]+)/.exec(url);
   if (collection.has(url)) {
     throw new Error('com.x | already collected');
@@ -92,7 +94,7 @@ const save = async ({ textWithUrl }) => {
   }
   opt.blockUrlList = [];
   opt.cookieParam = siteConfig.cookieParam;
-  const html = await utils.getHtmlByPuppeteer({ ...opt, url });
+  const html = await utils.getHtmlByPuppeteer({ ...opt, url: fetchUrl });
   // parse data
   let $ = cheerio.load(html);
   const loggedIn = $('body header button[aria-label="Account menu"]').length > 0;

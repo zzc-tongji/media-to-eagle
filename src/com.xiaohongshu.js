@@ -44,30 +44,31 @@ const getRedIdFromUserId = async ({ userId, opt }) => {
 
 const getUrl = (textWithUrl = '') => {
   if (check.not.string(textWithUrl)) {
-    return '';
+    return null;
   }
-  let url = utils.urlRegex.exec(textWithUrl)?.[0] || '';
+  let fetchUrl = utils.urlRegex.exec(textWithUrl)?.[0] || '';
   const valid = [
     '/xhslink.com/',
     '/www.xiaohongshu.com/discovery/item/',
     '/www.xiaohongshu.com/explore/',
   ].reduce((prev, curr) => {
-    return prev || url.includes(curr);
+    return prev || fetchUrl.includes(curr);
   }, false);
   if (!valid) {
-    return '';
+    return null;
   }
-  url = url.split('?')[0];
+  let url = fetchUrl.split('?')[0];
   url = url.split('#')[0];
-  return url;
+  return { url, fetchUrl };
 };
 
 const save = async ({ textWithUrl }) => {
   // get note url
-  const url = getUrl(textWithUrl);
-  if (check.emptyString(url)) {
+  let temp = getUrl(textWithUrl);
+  if (!temp) {
     throw Error(`com.xiaohongshu | invalid text with url | textWithUrl = ${textWithUrl}`);
   }
+  const { url, fetchUrl } = temp;
   // parse data
   const opt = {};
   opt.fetchOption = {};
@@ -86,7 +87,7 @@ const save = async ({ textWithUrl }) => {
       throw new Error('com.xiaohongshu | already collected');
     }
   }
-  const html = await utils.getHtmlByFetch({ ...opt, url });
+  const html = await utils.getHtmlByFetch({ ...opt, url: fetchUrl });
   const $ = cheerio.load(html);
   let data = $('html body script:contains("window.__INITIAL_STATE__")').text();
   data = data.replace('window.__INITIAL_STATE__', 'data');

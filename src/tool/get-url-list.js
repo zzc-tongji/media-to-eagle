@@ -39,10 +39,10 @@ const main = async () => {
     '.weibo.com',
     '.x.com',
     //
-    // 'xiaohongshu.com',
-    // 'instagram.com',
-    // 'weibo.com',
-    // 'x.com',
+    'xiaohongshu.com',
+    'instagram.com',
+    'weibo.com',
+    'x.com',
   ];
   folderNameList.map((folderName) => {
     const folder = eagle.searchFolderPreOrder({ name: folderName, data: { children: info.data.folders } });

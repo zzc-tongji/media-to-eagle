@@ -24,30 +24,33 @@ const init = () => {
 
 const getUrl = (textWithUrl = '') => {
   if (check.not.string(textWithUrl)) {
-    return '';
+    return null;
   }
   let url = utils.urlRegex.exec(textWithUrl)?.[0] || '';
   let valid = /\/([\S]+\.|)ameblo.jp\/([\S]+)\/entry-([0-9]+)\.html/.exec(url);
   if (valid) {
     url = url.split('?')[0];
     url = url.split('#')[0];
-    return `https://ameblo.jp/${valid[2]}/entry-${valid[3]}.html`;
+    const u = `https://ameblo.jp/${valid[2]}/entry-${valid[3]}.html`;
+    return { url: u, fetchUrl: u };
   }
   valid = /\/([\S]+\.|)ameblo.jp\/([\S]+)\/image-([0-9]+)-([0-9]+)\.html/.exec(url);
   if (valid) {
     url = url.split('?')[0];
     url = url.split('#')[0];
-    return `https://ameblo.jp/${valid[2]}/entry-${valid[3]}.html`;
+    const u = `https://ameblo.jp/${valid[2]}/entry-${valid[3]}.html`;
+    return { url: u, fetchUrl: u };
   }
-  return '';
+  return null;
 };
 
 const save = async ({ textWithUrl }) => {
   // get note url
-  const url = getUrl(textWithUrl);
-  if (check.emptyString(url)) {
+  let temp = getUrl(textWithUrl);
+  if (!temp) {
     throw Error(`jp.ameblo | invalid text with url | textWithUrl = ${textWithUrl}`);
   }
+  const { url, fetchUrl } = temp;
   if (collection.has(url)) {
     throw new Error('jp.ameblo | already collected');
   }
@@ -64,7 +67,7 @@ const save = async ({ textWithUrl }) => {
     opt.randomUserAgent = false;
   }
   //
-  const html = await utils.getHtmlByFetch({ ...opt, url });
+  const html = await utils.getHtmlByFetch({ ...opt, url: fetchUrl });
   let $ = cheerio.load(html);
   const headScript = $('head script[type="application/ld+json"]:eq(0)');
   if (headScript.length <= 0) {
