@@ -57,6 +57,11 @@ const main = async () => {
     allConfig = setting.get();
     allConfig.runtime = { wkdir: w, setting: s, collection: c };
     //
+    const d = allConfig?.browser?.puppeteer?.browserOption?.userDataDir || '';
+    if (check.not.emptyString(d)) {
+      allConfig.runtime.chromeData = path.isAbsolute(d) ? d : path.resolve(w, d);
+    }
+    //
     collection.load(c);
   } catch (error) {
     console.log(`invalid parameter | --setting="${argv.setting}" --collection="${argv.collection}" --wkdir="${argv.wkdir}" | ${error.message}`);
