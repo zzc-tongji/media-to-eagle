@@ -46,6 +46,10 @@ const main = async () => {
       console.log(`invalid parameter | --list="${argv.list}" --wkdir="${argv.wkdir}" | no such text file`);
     }
   }
+  if (urlList.length <= 0) {
+    console.log('Finish.');
+    return;
+  }
   // setting & collection
   let allConfig = null;
   try {
