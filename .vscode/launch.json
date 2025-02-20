@@ -28,6 +28,17 @@
     {
       "type": "node",
       "request": "launch",
+      "name": "Add Directory",
+      "program": "${workspaceFolder}\\src\\tool\\add-directory.js",
+      "args": [
+        "--wkdir=${workspaceFolder}\\wkdir",
+        "--directory=test",
+        "--name=19700101_000000_000"
+      ]
+    },
+    {
+      "type": "node",
+      "request": "launch",
       "name": "Extract Pinback to List",
       "program": "${workspaceFolder}\\src\\tool\\extract-pinback-to-list.js",
       "args": ["--wkdir=${workspaceFolder}\\wkdir"]

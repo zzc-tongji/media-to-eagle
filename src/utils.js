@@ -22,21 +22,27 @@ const createEagleFolder = async ({ parentName, name, summary, mediaCount, source
   if (check.not.string(name) || check.emptyString(name)) {
     throw Error('utils | createEagleFolder | parameter "name" should be non-empty "string"');
   }
-  if (check.not.number(mediaCount)) {
-    throw Error('utils | createEagleFolder | parameter "mediaCount" should be "number"');
+  //
+  const description = {};
+  if (check.string(summary) && check.not.emptyString(summary)) {
+    description.summary = summary;
   }
-  if (check.not.string(source) || check.emptyString(source)) {
-    throw Error('utils | createEagleFolder | parameter "source" should be non-empty "string"');
+  if (check.number(mediaCount)) {
+    description.mediaCount = mediaCount;
   }
-  if (check.not.string(url) || !urlRegex.test(url)) {
-    throw Error('utils | createEagleFolder | parameter "url" should be url "string"');
+  if (check.string(source) && check.not.emptyString(source)) {
+    description.source = source;
   }
+  if (check.string(url) && urlRegex.test(url)) {
+    description.url = url;
+  }
+  //
   await eagle.updateFolder({ name: '.import' });
   await eagle.updateFolder({ name: parentName, parentName: '.import' });
   return await eagle.updateFolder({
     name,
     parentName,
-    description: JSON.stringify({ summary, media_count: mediaCount, source, url }),
+    description: Object.keys(description).length > 0 ? JSON.stringify(description) : undefined,
   });
 };
 

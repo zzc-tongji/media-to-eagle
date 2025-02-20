@@ -6,7 +6,8 @@
     "pkg": "pkg",
     "start": "node src/index.js",
     "check-library": "node src/tool/check-library.js",
-    "get-url-list": "node src/tool/get-url-list.js"
+    "get-url-list": "node src/tool/get-url-list.js",
+    "add-directory": "node src/tool/add-directory.js"
   },
   "type": "module",
   "repository": "https://github.com/zzc-tongji/media-to-eagle",
