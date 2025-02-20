@@ -32,7 +32,7 @@
       "program": "${workspaceFolder}\\src\\tool\\add-directory.js",
       "args": [
         "--wkdir=${workspaceFolder}\\wkdir",
-        "--directory=test",
+        "--directory=import",
         "--name=19700101_000000_000"
       ]
     },

@@ -45,19 +45,21 @@ const main = async () => {
   eagle.init();
   //
   const nameList = fs.readdirSync(allConfig.runtime.directory).sort();
-  const pathList = nameList.map(p => `${allConfig.runtime.directory}${path.sep}${p}`);
-  const folder = await utils.createEagleFolder({ parentName: '.import', name: path.basename(allConfig.runtime.directory) });
-  eagle.post('/api/item/addFromPaths', {
-    items: pathList.map((p, i) => {
-      return {
-        path: p,
-        name: eagle.generateTitle(allConfig.runtime.timestampMs + i),
-        annotation: JSON.stringify({ file_name: nameList[i] }),
-      };
-    }),
-    folderId: folder.id,
-  });
-  console.log(`${pathList.length} file(s) in directory ${allConfig.runtime.directory} have been added to Eagle.`);
+  if (nameList.length > 0) {
+    const pathList = nameList.map(p => `${allConfig.runtime.directory}${path.sep}${p}`);
+    const folder = await utils.createEagleFolder({ parentName: '.import', name: path.basename(allConfig.runtime.directory) });
+    await eagle.post('/api/item/addFromPaths', {
+      items: pathList.map((p, i) => {
+        return {
+          path: p,
+          name: eagle.generateTitle(allConfig.runtime.timestampMs + i),
+          annotation: JSON.stringify({ file_name: nameList[i] }),
+        };
+      }),
+      folderId: folder.id,
+    });
+  }
+  console.log(`${nameList.length} file(s) in directory ${allConfig.runtime.directory} have been added to Eagle.`);
 };
 
 main();
