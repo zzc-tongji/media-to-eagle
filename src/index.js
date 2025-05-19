@@ -142,11 +142,14 @@ const main = async () => {
   });
   {
     // pinterest
-    const [ { id: p0 }, { id: p1 } ] = [
-      await eagle.updateFolder({ name: 'pinterest.com' }),
-      await eagle.updateFolder({ name: '.pinterest.com', parentName: '.import' }),
+    const [ { id: p0 }, { id: p1 }, { id: p2 }, { id: p3 } ] = [
+      await eagle.updateFolder({ name: 'referenced', parentName: 'pinterest.com' }),
+      await eagle.updateFolder({ name: 'self', parentName: 'pinterest.com' }),
+      //
+      await eagle.updateFolder({ name: 'referenced', parentName: '.pinterest.com' }),
+      await eagle.updateFolder({ name: 'self', parentName: '.pinterest.com' }),
     ];
-    const { data } = await eagle.get('/api/item/list', `orderBy=NAME&folders=${p0},${p1}&limit=1000000`);
+    const { data } = await eagle.get('/api/item/list', `orderBy=NAME&folders=${p0},${p1},${p2},${p3}&limit=1000000`);
     data.map(d => {
       // URL
       collection.add(d.url);

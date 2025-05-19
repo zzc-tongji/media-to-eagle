@@ -180,7 +180,9 @@ const save = async ({ textWithUrl }) => {
     description: data?.richMetadata?.description?.trim() || data.description.trim() || undefined,
   };
   // folder
-  const folder = await eagle.updateFolder({ name: '.pinterest.com', parentName: '.import' });
+  const selfFolder = await eagle.updateFolder({ name: 'self', parentName: '.pinterest.com' });
+  const referencedFolder = await eagle.updateFolder({ name: 'referenced', parentName: '.pinterest.com' });
+  const folder = data.link ? referencedFolder : selfFolder;
   const website = data.link ? data.link : url;
   const payload = {
     items: [ {
