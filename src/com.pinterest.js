@@ -96,11 +96,17 @@ const save = async ({ textWithUrl }) => {
       if (await handler.getUrl(data.link)) {
         try {
           const message = await handler.save({ textWithUrl: data.link });
+          collection.add(url);
           console.log(`✅ [ref] ${data.link} | ${message}`);
         } catch (error) {
-          console.log(`${error?.message?.includes('collected') ? '✅' : '🛑'} [ref] ${data.link} | ${error.message}`);
+          if (error?.message?.includes('collected')) {
+            collection.add(url);
+            console.log(`☑️ [ref] ${data.link} | ${error.message}`);
+          } else {
+            console.log(`🛑 [ref] ${data.link} | ${error.message}`);
+          }
         }
-        return 'com.pinterest | reference collected';
+        throw new Error('com.pinterest | reference collected');
       }
     }
   }
