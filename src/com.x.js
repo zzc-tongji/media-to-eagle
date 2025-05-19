@@ -66,7 +66,7 @@ const getUserInfo = async (userXId) => {
   if (jsonElement.length <= 0) {
     return null;
   }
-  cache.userXIdMap[userXId] = JSON.parse(jsonElement.text()).author;
+  cache.userXIdMap[userXId] = JSON.parse(jsonElement.text()).mainEntity || null;
   return cache.userXIdMap[userXId];
 };
 
@@ -76,8 +76,8 @@ const save = async ({ textWithUrl }) => {
   if (!temp) {
     throw Error(`com.x | invalid text with url | textWithUrl = ${textWithUrl}`);
   }
-  const { url, fetchUrl } = temp;
-  const [ , userXId, tweetId ] = /x.com\/([\S]+)\/status\/([\d]+)/.exec(url);
+  let { url, fetchUrl } = temp;
+  let [ , userXId, tweetId ] = /x.com\/([\S]+)\/status\/([\d]+)/.exec(url);
   if (collection.has(url)) {
     throw new Error('com.x | already collected');
   }
@@ -98,16 +98,12 @@ const save = async ({ textWithUrl }) => {
   // parse data
   let $ = cheerio.load(html);
   const loggedIn = $('body header button[aria-label="Account menu"]').length > 0;
-  const allArticle = $('body main article');
   let article = null;
-  for (let i = 0; i < allArticle.length; i++) {
-    const a = allArticle.eq(i);
-    if (a.parent().children().length >= 2) {
-      article = a;
-      break;
-    }
+  article = $('body main article:has(+[data-testid=inline_reply_offscreen]):eq(0)');
+  if (article.length <= 0) {
+    article = $('body main article:has([role=status]):eq(0)');
   }
-  if (!article) {
+  if (article.length <= 0) {
     throw Error('com.x | tweet not found | element "<article />" not found');
   }
   let articleHtml = article.prop('outerHTML');
@@ -116,6 +112,14 @@ const save = async ({ textWithUrl }) => {
   const createdAtString = $('time:eq(0)').prop('datetime');
   if (check.not.string(createdAtString) || check.emptyString(createdAtString)) {
     throw new Error(`com.x | invalid tweet format | $('time:eq(0)').prop('datetime') | ${articleHtml}`);
+  }
+  temp = $('div[data-testid=User-Name] a').prop('href').slice(1);
+  if (check.not.string(temp) || check.emptyString(temp)) {
+    throw new Error(`com.x | invalid tweet format | $('div[data-testid=User-Name] a').prop('href') | ${articleHtml}`);
+  }
+  if (userXId !== temp) {
+    userXId = temp;
+    url = `https://x.com/${temp}/status/${tweetId}`;
   }
   const textElement = $('div[data-testid="tweetText"]:eq(0)');
   const imageElementList = $('div[aria-label="Image"] img');
@@ -154,7 +158,7 @@ const save = async ({ textWithUrl }) => {
     `_login=${loggedIn}`,
     '_source=x.com',
     `_user_id=x.com/${cache.userXIdMap[userXId].identifier}`,
-    ...atUserXIdList.map(xId => `_user_id=x.com/${cache.userXIdMap[xId].identifier}`),
+    ...atUserXIdList.map(xId => cache.userXIdMap[xId]?.identifier ? `_user_id=x.com/${cache.userXIdMap[xId].identifier}` : null).filter(u => u),
     ...hashtagList.map(h => `_tag=x.com/${h}`),
     ...hashtagList.map(h => `_union_tag=${h}`),
   ];
