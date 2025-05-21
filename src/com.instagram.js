@@ -54,7 +54,7 @@ const getUserFromUserName = async ({ userName, opt }) => {
   const title = $('head>meta[property="og:title"]')?.attr('content') || '';
   const temp = /^(.*)\(@(.*)\)(.*)$/.exec(title);
   if (check.not.array(temp)) {
-    throw new Error(`com.instagram | invalid user format | title = ${title}`);
+    return null;
   }
   const user = {
     fullName: temp[1],
@@ -211,6 +211,9 @@ const save = async ({ textWithUrl }) => {
         userNameMap[user.username] = atUserMap[user.pk];
       } else {
         const u = await getUserFromUserName({ userName: user.username, opt });
+        if (!u) {
+          continue;
+        }
         atUserMap[u.userId] = u;
         //
         user.full_name = u.fullName;
@@ -231,6 +234,9 @@ const save = async ({ textWithUrl }) => {
             userNameMap[user.username] = atUserMap[user.pk];
           } else {
             const u = await getUserFromUserName({ userName: user.username, opt });
+            if (!u) {
+              continue;
+            }
             atUserMap[u.userId] = u;
             //
             user.full_name = u.fullName;
@@ -251,7 +257,10 @@ const save = async ({ textWithUrl }) => {
   raw.html_tag_list = [];
   for (const item of userAndTagList) {
     if (item.startsWith('@')) {
-      raw.html_at_user_list.push(await getUserFromUserName({ userName: item.split('@').pop(), opt }));
+      const u = await getUserFromUserName({ userName: item.split('@').pop(), opt });
+      if (u) {
+        raw.html_at_user_list.push();
+      }
     }
     if (item.startsWith('#')) {
       raw.html_tag_list.push(item.split('#').pop());
