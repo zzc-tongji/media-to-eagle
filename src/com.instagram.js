@@ -84,7 +84,7 @@ const getUrl = (textWithUrl = '') => {
   if (!u) {
     return '';
   }
-  const code = /\/(www\.|)instagram.com((\/[a-zA-Z._]+)?)\/(p|reel)\/([0-9A-Za-z]+)/.exec(u)?.[5] || '';
+  const code = /\/(www\.|)instagram.com((\/[a-zA-Z._]+)?)\/(p|reel)\/([0-9A-Za-z_-]+)/.exec(u)?.[5] || '';
   if (!code) {
     return '';
   }
