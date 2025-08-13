@@ -107,17 +107,10 @@ const save = async ({ textWithUrl }) => {
   if (check.object(siteConfig.headerMap)) {
     opt.headerMap = siteConfig.headerMap;
   }
-  if (
-    (check.string(siteConfig.headerMap['User-Agent']) && check.not.emptyArray(siteConfig.headerMap['User-Agent'])) ||
-    (check.string(siteConfig.headerMap['user-agent']) && check.not.emptyArray(siteConfig.headerMap['user-agent']))
-  ) {
-    opt.randomUserAgent = false;
-  }
   opt.blockUrlList = [
     'https://edge-chat.instagram.com/',
     'https://www.facebook.com/',
   ];
-  opt.cookieParam = siteConfig.cookieParam;
   //
   const html = await utils.getHtmlByPuppeteer({ ...opt, url: fetchUrl });
   // get raw data of post (1)

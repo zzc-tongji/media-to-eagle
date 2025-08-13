@@ -51,14 +51,6 @@ const getUserInfo = async (userXId) => {
   if (check.object(siteConfig.headerMap)) {
     opt.headerMap = siteConfig.headerMap;
   }
-  if (
-    (check.string(siteConfig.headerMap['User-Agent']) && check.not.emptyArray(siteConfig.headerMap['User-Agent'])) ||
-    (check.string(siteConfig.headerMap['user-agent']) && check.not.emptyArray(siteConfig.headerMap['user-agent']))
-  ) {
-    opt.randomUserAgent = false;
-  }
-  opt.blockUrlList = [];
-  opt.cookieParam = siteConfig.cookieParam;
   const html = await utils.getHtmlByPuppeteer({ ...opt, url: `https://x.com/${userXId}` });
   //
   const $ = cheerio.load(html);
@@ -86,14 +78,6 @@ const save = async ({ textWithUrl }) => {
   if (check.object(siteConfig.headerMap)) {
     opt.headerMap = siteConfig.headerMap;
   }
-  if (
-    (check.string(siteConfig.headerMap['User-Agent']) && check.not.emptyArray(siteConfig.headerMap['User-Agent'])) ||
-    (check.string(siteConfig.headerMap['user-agent']) && check.not.emptyArray(siteConfig.headerMap['user-agent']))
-  ) {
-    opt.randomUserAgent = false;
-  }
-  opt.blockUrlList = [];
-  opt.cookieParam = siteConfig.cookieParam;
   const html = await utils.getHtmlByPuppeteer({ ...opt, url: fetchUrl });
   // parse data
   let $ = cheerio.load(html);
