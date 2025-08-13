@@ -189,7 +189,7 @@ const pptr = {
   cookie: null,
 };
 
-const getHtmlByPuppeteer = async ({ url, headerMap = {}, blockUrlList = [], randomUserAgent = true, cookieParam = [] }) => {
+const getHtmlByPuppeteer = async ({ url, headerMap = {}, blockUrlList = [], randomUserAgent = false, cookieParam = [] }) => {
   // setting
   if (!allConfig) {
     allConfig = setting.get();
@@ -278,7 +278,7 @@ const getHtmlByPuppeteer = async ({ url, headerMap = {}, blockUrlList = [], rand
   return html;
 };
 
-const getCookieByPuppeteer = async ({ url, headerMap = {}, blockUrlList = [], randomUserAgent = true }) => {
+const getDataFromResponseByPuppeteer = async ({ url, callback, once = true, timeoutMs = 10000, headerMap = {}, blockUrlList = [], randomUserAgent = false, cookieParam = [] }) => {
   // setting
   if (!allConfig) {
     allConfig = setting.get();
@@ -286,6 +286,18 @@ const getCookieByPuppeteer = async ({ url, headerMap = {}, blockUrlList = [], ra
   // parameter
   if (check.not.string(url) || !urlRegex.exec(url)) {
     throw Error('utils | getHtmlByPuppeteer | parameter "url" should be "string" of valid url');
+  }
+  if (check.not.function(callback)) {
+    throw Error('utils | getHtmlByPuppeteer | parameter "callback" should be "Function<HTTPResponse> => Promise<Object>" (https://pptr.dev/api/puppeteer.httpresponse)');
+  }
+  if (check.not.boolean(once)) {
+    throw Error('utils | getHtmlByPuppeteer | parameter "once" should be "bool"');
+  }
+  if (check.not.number(timeoutMs)) {
+    throw Error('utils | getHtmlByPuppeteer | parameter "timeoutMs" should be "number"');
+  }
+  if (!once && timeoutMs > 60000) {
+    throw Error('utils | getHtmlByPuppeteer | parameter "timeoutMs" should be "positive number not larger than 60000" when parameter "once" is "false"');
   }
   if (check.not.object.of.string(headerMap)) {
     throw Error('utils | getHtmlByPuppeteer | parameter "headerMap" should be "Object<String>"');
@@ -324,6 +336,19 @@ const getCookieByPuppeteer = async ({ url, headerMap = {}, blockUrlList = [], ra
       });
     }
   }
+  // cookie
+  if (!check.array(pptr.cookie)) {
+    pptr.cookie = [];
+  }
+  const isCookieLoaded = pptr.cookie.reduce((prev, curr) => {
+    return prev || (curr === cookieParam);
+  }, false);
+  if (!isCookieLoaded) {
+    for (let i = 0; i < cookieParam.length; i++) {
+      await pptr.page.setCookie(cookieParam[i]);
+    }
+    pptr.cookie.push(cookieParam);
+  }
   //
   const page = pptr.page;
   if (check.not.emptyObject(headerMap)) {
@@ -332,13 +357,32 @@ const getCookieByPuppeteer = async ({ url, headerMap = {}, blockUrlList = [], ra
   if (randomUserAgent) {
     await page.setUserAgent(getRandomUsarAgent());
   }
-  // html
-  try {
-    await page.goto(url, { waitUntil: 'networkidle2', timeout: allConfig.browser.puppeteer.timeoutMs });
-  } catch (e) {
-    throw Error(`utils | getCookieByPuppeteer | goto "${url}" | ${e.message}`);
+  // get data from response
+  let rtn = null;
+  page.on('response', (response) => {
+    callback(response).then((data) => {
+      if (!data) {
+        return;
+      }
+      if (once) {
+        rtn = data;
+        page.off('response');
+      } else {
+        rtn ? rtn.push(data) : (rtn = [ data ]);
+      }
+    });
+  });
+  await page.goto(url, { waitUntil: 'networkidle2', timeout: 60000 });
+  let ms = 0;
+  while (ms < timeoutMs) {
+    if (once && rtn) {
+      page.off('response');
+      return rtn;
+    }
+    await sleep(250);
+    ms += 250;
   }
-  return await page.cookies();
+  return rtn;
 };
 
 const getRandomUsarAgent = () => {
@@ -394,7 +438,7 @@ export {
   getHtmlByFetch,
   getRedirectByFetch,
   getHtmlByPuppeteer,
-  getCookieByPuppeteer,
+  getDataFromResponseByPuppeteer,
   formatDateTime,
   sleep,
   uploadViaHttp,

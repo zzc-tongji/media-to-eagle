@@ -11,19 +11,27 @@ import * as utils from './utils.js';
 
 let allConfig = {};
 let siteConfig = {
-  headerMap: {
-    'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36',
-  },
+  headerMap: {},
   interval: 3000,
 };
 //
 const cache = {
-  cookie: '',
   loggedIn: null, // null, false, true
 };
 const init = () => {
   allConfig = setting.get();
   siteConfig = allConfig.site['com.weibo'];
+};
+
+const callback = (response) => {
+  return new Promise((resolve) => {
+    if (![ 'GET', 'POST' ].includes(response.request().method().toUpperCase()) || !/weibo.com\/ajax\/statuses\/show/.test(response.url()) || !response.ok()) {
+      resolve(null);
+      return;
+    }
+    resolve(response.json());
+    return;
+  });
 };
 
 const getUrl = async (textWithUrl = '') => {
@@ -68,61 +76,42 @@ const getUrl = async (textWithUrl = '') => {
 };
 
 const save = async ({ textWithUrl }) => {
-  // get ajax url
+  // get weibo url
   let temp = await getUrl(textWithUrl);
   if (!temp) {
     throw Error(`com.weibo | invalid text with url | textWithUrl = ${textWithUrl}`);
   }
-  const [ , creatorId, weiboId ] = /weibo.com\/([0-9]+)\/([0-9A-Za-z]+)\/?/.exec(temp.url);
-  const url = `https://weibo.com/ajax/statuses/show?id=${weiboId}`;
   // prepare option
   const opt = {};
-  opt.fetchOption = {};
   if (check.object(siteConfig.headerMap)) {
-    opt.fetchOption.headers = siteConfig.headerMap;
+    opt.headerMap = siteConfig.headerMap;
   }
-  if (
-    (check.string(siteConfig.headerMap['User-Agent']) && check.not.emptyString(siteConfig.headerMap['User-Agent'])) ||
-    (check.string(siteConfig.headerMap['user-agent']) && check.not.emptyString(siteConfig.headerMap['user-agent']))
-  ) {
-    opt.randomUserAgent = false;
-  }
-  opt.blockUrlList = [];
-  // cookie
-  if (check.string(siteConfig.headerMap['Cookie']) && check.not.emptyString(siteConfig.headerMap['Cookie'])) {
-    opt.fetchOption.headers['cookie'] = siteConfig.headerMap['Cookie'];
-  }
-  if (check.string(siteConfig.headerMap['cookie']) && check.not.emptyString(siteConfig.headerMap['cookie'])) {
-    opt.fetchOption.headers['cookie'] = siteConfig.headerMap['cookie'];
-  }
-  if (check.not.emptyString(cache.cookie)) {
-    opt.fetchOption.headers['cookie'] = cache.cookie;
-  }
-  if (!opt.fetchOption.headers['cookie']) {
-    const cookieParam = await utils.getCookieByPuppeteer({ ...opt, url: 'https://weibo.com/' });
-    opt.fetchOption.headers['cookie'] = cookieParam.map((c) => {
-      return `${c.name}=${c.value}; `;
-    }).join('');
-    cache.cookie = opt.fetchOption.headers['cookie'];
-  }
-  // cookie
+  // login status
   if (cache.loggedIn === null) {
-    cache.loggedIn = check.emptyString(await utils.getRedirectByFetch({ ...opt, url: 'https://me.weibo.com/' }));
+    const html = await utils.getHtmlByPuppeteer({ ...opt, url: 'https://weibo.com/' });
+    const $ = cheerio.load(html);
+    const hrefList = [];
+    $('.woo-tab-nav a').map((_, el) => {
+      hrefList.push(el.attribs['href']);
+    });
+    cache.loggedIn = hrefList.reduce((prev, curr) => prev || /^\/u\/(.*)$/.test(curr), false);
   }
-  // parse data
-  const html = await utils.getHtmlByFetch({ ...opt, url });
-  let weibo = null;
-  try {
-    weibo = JSON.parse(html);
-  } catch (error) {
-    throw new Error(`com.weibo | url = ${url} | invalid cookie | ${opt.headerMap['cookie']}`);
+  // get and validate data
+  const weibo = await utils.getDataFromResponseByPuppeteer({
+    ...opt,
+    url: temp.fetchUrl,
+    callback,
+  });
+  if (!weibo) {
+    throw new Error(`com.weibo | weibo non-existent | url = ${temp.fetchUrl}`);
   }
-  // validate data
   if (check.not.object(weibo) || weibo.error_code) {
     if (weibo.error_code === 27004) {
-      return handle27004({ creatorId, weiboId, opt });
+      // 27004 - mobile only
+      const [ , , weiboId ] = /weibo.com\/([0-9]+)\/([0-9A-Za-z]+)\/?/.exec(temp.url);
+      return handle27004({ weiboId, opt });
     }
-    throw new Error(`com.weibo | weibo non-existent | url = ${url} | ${JSON.stringify(weibo)}`);
+    throw new Error(`com.weibo | weibo non-existent | url = ${temp.fetchUrl} | ${JSON.stringify(weibo)}`);
   }
   if (check.not.string(weibo?.idstr) || check.emptyString(weibo?.idstr)) {
     throw new Error(`com.weibo | invalid weibo format | weibo?.idstr | ${JSON.stringify(weibo)}`);
@@ -280,6 +269,7 @@ const save = async ({ textWithUrl }) => {
   }
   // add to eagle
   await eagle.post('/api/item/addFromURLs', payload);
+  collection.add(weiboUrl);
   // interval
   await utils.sleep(siteConfig.interval);
   //
@@ -289,7 +279,7 @@ const save = async ({ textWithUrl }) => {
 const handle27004 = async ({ weiboId, opt }) => {
   // parse data
   const url = `https://m.weibo.cn/status/${weiboId}`;
-  const html = await utils.getHtmlByFetch({ ...opt, url });
+  const html = await utils.getHtmlByPuppeteer({ ...opt, url });
   const $ = cheerio.load(html);
   let data = $('html body script:contains("$render_data")').text();
   if (!data) {
