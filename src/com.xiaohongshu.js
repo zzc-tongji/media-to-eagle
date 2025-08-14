@@ -80,8 +80,6 @@ const save = async ({ textWithUrl }) => {
     (check.string(siteConfig.headerMap['user-agent']) && check.not.emptyArray(siteConfig.headerMap['user-agent']))
   ) {
     opt.randomUserAgent = false;
-  } else {
-    opt.randomUserAgent = true;
   }
   //
   if (url.includes('/www.xiaohongshu.com/explore/')) {
