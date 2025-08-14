@@ -38,39 +38,18 @@ const getUrl = async (textWithUrl = '') => {
   if (check.not.string(textWithUrl)) {
     return null;
   }
-  const url = utils.urlRegex.exec(textWithUrl)?.[0] || '';
+  let url = utils.urlRegex.exec(textWithUrl)?.[0] || '';
   if (check.emptyString(url)) {
     return null;
   }
   //
-  if (/weibo.com\/[0-9]+\/[0-9A-Za-z]+\/?/.test(url)) {
-    return { url, fetchUrl: url };
+  url = /t.cn\/[0-9A-Za-z]+\/?/.test(url) ? (await utils.getRedirectByFetch({ url })) : url;
+  let temp;
+  if ((temp = /weibo.com\/([0-9]+)\/([0-9A-Za-z]+)\/?/.exec(url))) {
+    return { url: `https://weibo.com/${temp[1]}/${temp[2]}`, userId: temp[1], weiboId: temp[2] };
   }
-  //
-  if (/m.weibo.cn\/(status|detail)\/[0-9A-Za-z]+\/?/.test(url)) {
-    const opt = {
-      fetchOption: check.object(siteConfig.headerMap) ? siteConfig.headerMap : {},
-      randomUserAgent: false,
-    };
-    const html = await utils.getHtmlByFetch({ ...opt, url });
-    const temp = /"profile_url":[\s]*"([\s\S]*)\/u\/([0-9A-Za-z]+)\?([\s\S]*)lfid=([0-9A-Za-z]+)([\s\S]*)"/.exec(html);
-    if (!temp) {
-      return null;
-    }
-    const u = `https://weibo.com/${temp[2]}/${temp[4]}`;
-    return { url: u, fetchUrl: u };
-  }
-  //
-  if (/t.cn\/[0-9A-Za-z]+\/?/.test(url)) {
-    const opt = {
-      fetchOption: check.object(siteConfig.headerMap) ? siteConfig.headerMap : {},
-      randomUserAgent: false,
-    };
-    const u = await utils.getRedirectByFetch({ ...opt, url });
-    if (!/weibo.com\/[0-9]+\/[0-9A-Za-z]+\/?/.test(u)) {
-      return null;
-    }
-    return { url: u, fetchUrl: u };
+  if ((temp = /m.weibo.cn\/(status|detail)\/([0-9A-Za-z]+)\/?/.exec(url))) {
+    return { url: `https://m.weibo.com/status/${temp[2]}`, weiboId: temp[2] };
   }
   return null;
 };
@@ -96,29 +75,26 @@ const save = async ({ textWithUrl }) => {
     });
     cache.loggedIn = hrefList.reduce((prev, curr) => prev || /^\/u\/(.*)$/.test(curr), false);
   }
-  // filter duplicate
+  // filter duplicate (general)
   if (collection.has(temp.url)) {
     throw new Error('com.weibo | already collected');
   }
-  const [ , , weiboId ] = /weibo.com\/([0-9]+)\/([0-9A-Za-z]+)\/?/.exec(temp.url);
-  if (collection.has(`https://m.weibo.cn/status/${weiboId}`)) {
-    throw new Error('com.weibo | already collected');
+  if (!temp.userId) {
+    // mobile url without user ID => mobile weibo handler
+    return handle27004({ weiboId: temp.weiboId, opt });
   }
   // get and validate data
-  const weibo = await utils.getDataFromResponseByPuppeteer({
-    ...opt,
-    url: temp.fetchUrl,
-    callback,
-  });
+  const url = `https://weibo.com/${temp.userId}/${temp.weiboId}`;
+  const weibo = await utils.getDataFromResponseByPuppeteer({ ...opt, url, callback });
   if (!weibo) {
-    throw new Error(`com.weibo | weibo non-existent | url = ${temp.fetchUrl}`);
+    throw new Error(`com.weibo | weibo non-existent | url = ${url}`);
   }
   if (check.not.object(weibo) || weibo.error_code) {
     if (weibo.error_code === 27004) {
-      // 27004 - mobile only
-      return handle27004({ weiboId, opt });
+      // error 27004 as "weibo accessed from mobile only" => mobile weibo handler
+      return handle27004({ weiboId: temp.weiboId, opt });
     }
-    throw new Error(`com.weibo | weibo non-existent | url = ${temp.fetchUrl} | ${JSON.stringify(weibo)}`);
+    throw new Error(`com.weibo | weibo non-existent | url = ${url} | ${JSON.stringify(weibo)}`);
   }
   if (check.not.string(weibo?.idstr) || check.emptyString(weibo?.idstr)) {
     throw new Error(`com.weibo | invalid weibo format | weibo?.idstr | ${JSON.stringify(weibo)}`);
@@ -158,7 +134,7 @@ const save = async ({ textWithUrl }) => {
       throw new Error(`com.weibo | invalid weibo format | weibo?.pic_num | ${JSON.stringify(weibo)}`);
     }
   }
-  // filter duplicate
+  // filter duplicate (short id)
   const weiboUrl = `https://weibo.com/${weibo.user.idstr}/${weibo.idstr}`;
   const weiboShortUrl = `https://weibo.com/${weibo.user.idstr}/${weibo.mblogid}`;
   if (collection.has(weiboUrl) || collection.has(weiboShortUrl)) {
@@ -329,7 +305,7 @@ const handle27004 = async ({ weiboId, opt }) => {
       throw new Error(`com.weibo | handle27004 | invalid weibo format | data?.pics | ${JSON.stringify(data)}`);
     }
   }
-  // filter duplicate
+  // filter duplicate (short id)
   const weiboUrl = `https://weibo.com/${data.user.id}/${data.id}`;
   const weiboShortUrl = `https://weibo.com/${data.user.id}/${data.bid}`;
   if (collection.has(weiboUrl) || collection.has(weiboShortUrl)) {
