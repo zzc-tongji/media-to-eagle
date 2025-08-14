@@ -96,6 +96,14 @@ const save = async ({ textWithUrl }) => {
     });
     cache.loggedIn = hrefList.reduce((prev, curr) => prev || /^\/u\/(.*)$/.test(curr), false);
   }
+  // filter duplicate
+  if (collection.has(temp.url)) {
+    throw new Error('com.weibo | already collected');
+  }
+  const [ , , weiboId ] = /weibo.com\/([0-9]+)\/([0-9A-Za-z]+)\/?/.exec(temp.url);
+  if (collection.has(`https://m.weibo.cn/status/${weiboId}`)) {
+    throw new Error('com.weibo | already collected');
+  }
   // get and validate data
   const weibo = await utils.getDataFromResponseByPuppeteer({
     ...opt,
@@ -108,7 +116,6 @@ const save = async ({ textWithUrl }) => {
   if (check.not.object(weibo) || weibo.error_code) {
     if (weibo.error_code === 27004) {
       // 27004 - mobile only
-      const [ , , weiboId ] = /weibo.com\/([0-9]+)\/([0-9A-Za-z]+)\/?/.exec(temp.url);
       return handle27004({ weiboId, opt });
     }
     throw new Error(`com.weibo | weibo non-existent | url = ${temp.fetchUrl} | ${JSON.stringify(weibo)}`);
@@ -151,12 +158,13 @@ const save = async ({ textWithUrl }) => {
       throw new Error(`com.weibo | invalid weibo format | weibo?.pic_num | ${JSON.stringify(weibo)}`);
     }
   }
-  // common
+  // filter duplicate
   const weiboUrl = `https://weibo.com/${weibo.user.idstr}/${weibo.idstr}`;
   const weiboShortUrl = `https://weibo.com/${weibo.user.idstr}/${weibo.mblogid}`;
   if (collection.has(weiboUrl) || collection.has(weiboShortUrl)) {
     throw new Error('com.weibo | already collected');
   }
+  // common
   const createdAtDate = new Date(weibo.created_at);
   const createdAtTimestampMs = createdAtDate.getTime();
   weibo.created_at_timestamp_ms = createdAtTimestampMs;
@@ -321,11 +329,13 @@ const handle27004 = async ({ weiboId, opt }) => {
       throw new Error(`com.weibo | handle27004 | invalid weibo format | data?.pics | ${JSON.stringify(data)}`);
     }
   }
-  // common
+  // filter duplicate
   const weiboUrl = `https://weibo.com/${data.user.id}/${data.id}`;
-  if (collection.has(weiboUrl)) {
+  const weiboShortUrl = `https://weibo.com/${data.user.id}/${data.bid}`;
+  if (collection.has(weiboUrl) || collection.has(weiboShortUrl)) {
     throw new Error('com.weibo | already collected');
   }
+  // common
   const createdAtDate = new Date(data.created_at);
   const createdAtTimestampMs = createdAtDate.getTime();
   data.created_at_timestamp_ms = createdAtTimestampMs;

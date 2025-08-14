@@ -137,6 +137,11 @@ const main = async () => {
       //
       if (description.url) {
         collection.add(description.url);
+        // weibo
+        const weibo = /^https:\/\/weibo.com\/([0-9]+)\/([0-9]+)$/.exec(description.url);
+        if (weibo) {
+          collection.add(`https://m.weibo.cn/status/${weibo[2]}`);
+        }
       }
     });
   });
