@@ -114,7 +114,15 @@ const save = async ({ textWithUrl }) => {
   if (check.not.string(weibo?.created_at)) {
     throw new Error(`com.weibo | invalid weibo format | weibo?.created_at | ${JSON.stringify(weibo)}`);
   }
-  if (weibo?.page_info?.object_type === 'video') {
+  if (weibo?.page_info?.object_type === 'story') {
+    // video
+    if (check.not.object(weibo?.page_info?.pic_info?.pic_big)) {
+      throw new Error(`com.weibo | invalid weibo format | weibo?.page_info?.pic_info?.pic_big | ${JSON.stringify(weibo)}`);
+    }
+    if (check.not.array(weibo?.page_info?.slide_cover?.playback_list)) {
+      throw new Error(`com.weibo | invalid weibo format | weibo?.page_info?.slide_cover?.playback_list | ${JSON.stringify(weibo)}`);
+    }
+  } else if (weibo?.page_info?.object_type === 'video') {
     // video
     if (check.not.object(weibo?.page_info?.media_info?.big_pic_info)) {
       throw new Error(`com.weibo | invalid weibo format | weibo?.page_info?.media_info?.big_pic_info | ${JSON.stringify(weibo)}`);
@@ -219,7 +227,23 @@ const save = async ({ textWithUrl }) => {
     fs.unlinkSync(metaFile);
   }
   let payload = {};
-  if (weibo?.page_info?.object_type === 'video') {
+  if (weibo?.page_info?.object_type === 'story') {
+    // video
+    const image_url = Object.values(weibo.page_info.pic_info.pic_big).sort((a, b) => b.width - a.width)?.[0]?.url;
+    const video_url = weibo.page_info.slide_cover.playback_list.sort((a, b) => b.play_info.size - a.play_info.size)?.[0]?.play_info?.url;
+    payload = {
+      items: [ image_url, video_url ].filter(url => url).map((url, idx) => {
+        return {
+          url,
+          name: eagle.generateTitle(createdAtTimestampMs + 1 + idx),
+          website: weiboUrl,
+          tags: tagList,
+          annotation: JSON.stringify({ ...annotation, media_url: url }),
+        };
+      }),
+      folderId: folder.id,
+    };
+  } else if (weibo?.page_info?.object_type === 'video') {
     // video
     const image_url = Object.values(weibo.page_info.media_info.big_pic_info).sort((a, b) => b.width - a.width)?.[0]?.url;
     const video_url = weibo.page_info.media_info.playback_list.sort((a, b) => b.play_info.size - a.play_info.size)?.[0]?.play_info?.url;
