@@ -192,37 +192,19 @@ const save = async ({ textWithUrl }) => {
   // meta
   const metaFile = path.resolve(allConfig.runtime.wkdir, `${Date.now()}.com.weibo.${weibo.idstr}.meta.json`);
   fs.writeFileSync(metaFile, JSON.stringify(weibo, null, 2));
-  if (check.not.string(allConfig.eagle.stage) || check.emptyString(allConfig.eagle.stage) || !utils.urlRegex.test(allConfig.eagle.stage)) {
-    // local
-    await eagle.post('/api/item/addFromPaths', {
-      items: [
-        {
-          path: path.resolve(metaFile),
-          name: `${eagle.generateTitle(createdAtDate)}`,
-          website: weiboUrl,
-          tags: tagList,
-          annotation: JSON.stringify(annotation),
-        },
-      ],
-      folderId: folder.id,
-    });
-    await utils.sleep(1000);
-  } else {
-    // http upload and download via stage
-    await utils.uploadViaHttp({ filePath: metaFile, url: allConfig.eagle.stage });
-    await eagle.post('/api/item/addFromPaths', {
-      items: [
-        {
-          path: path.resolve(metaFile),
-          name: `${eagle.generateTitle(createdAtDate)}`,
-          website: weiboUrl,
-          tags: tagList,
-          annotation: JSON.stringify(annotation),
-        },
-      ],
-      folderId: folder.id,
-    });
-  }
+  await eagle.post('/api/item/addFromPaths', {
+    items: [
+      {
+        path: path.resolve(metaFile),
+        name: `${eagle.generateTitle(createdAtDate)}`,
+        website: weiboUrl,
+        tags: tagList,
+        annotation: JSON.stringify(annotation),
+      },
+    ],
+    folderId: folder.id,
+  });
+  await utils.sleep(1000);
   if (!allConfig?.meta?.keepMetaFile) {
     fs.unlinkSync(metaFile);
   }
@@ -385,37 +367,19 @@ const handle27004 = async ({ weiboId, opt }) => {
   // meta
   const metaFile = path.resolve(allConfig.runtime.wkdir, `${Date.now()}.com.weibo.${data.id}.meta.json`);
   fs.writeFileSync(metaFile, JSON.stringify(data, null, 2));
-  if (check.not.string(allConfig.eagle.stage) || check.emptyString(allConfig.eagle.stage) || !utils.urlRegex.test(allConfig.eagle.stage)) {
-    // local
-    await eagle.post('/api/item/addFromPaths', {
-      items: [
-        {
-          path: path.resolve(metaFile),
-          name: `${eagle.generateTitle(createdAtDate)}`,
-          website: weiboUrl,
-          tags: tagList,
-          annotation: JSON.stringify(annotation),
-        },
-      ],
-      folderId: folder.id,
-    });
-    await utils.sleep(1000);
-  } else {
-    // http upload and download via stage
-    await utils.uploadViaHttp({ filePath: metaFile, url: allConfig.eagle.stage });
-    await eagle.post('/api/item/addFromPaths', {
-      items: [
-        {
-          path: path.resolve(metaFile),
-          name: `${eagle.generateTitle(createdAtDate)}`,
-          website: weiboUrl,
-          tags: tagList,
-          annotation: JSON.stringify(annotation),
-        },
-      ],
-      folderId: folder.id,
-    });
-  }
+  await eagle.post('/api/item/addFromPaths', {
+    items: [
+      {
+        path: path.resolve(metaFile),
+        name: `${eagle.generateTitle(createdAtDate)}`,
+        website: weiboUrl,
+        tags: tagList,
+        annotation: JSON.stringify(annotation),
+      },
+    ],
+    folderId: folder.id,
+  });
+  await utils.sleep(1000);
   if (!allConfig?.meta?.keepMetaFile) {
     fs.unlinkSync(metaFile);
   }

@@ -142,37 +142,19 @@ const save = async ({ textWithUrl }) => {
   //
   const metaFile = path.resolve(allConfig.runtime.wkdir, `${Date.now()}.jp.ameblo.${blogId}.meta.html`);
   fs.writeFileSync(metaFile, entryBodyHtml);
-  if (check.not.string(allConfig.eagle.stage) || check.emptyString(allConfig.eagle.stage) || !utils.urlRegex.test(allConfig.eagle.stage)) {
-    // local
-    await eagle.post('/api/item/addFromPaths', {
-      items: [
-        {
-          path: path.resolve(metaFile),
-          name: `${eagle.generateTitle(modifiedTime)}`,
-          website: url,
-          tags: tagList,
-          annotation: JSON.stringify(annotation),
-        },
-      ],
-      folderId: folder.id,
-    });
-    await utils.sleep(1000);
-  } else {
-    // http upload and download via stage
-    await utils.uploadViaHttp({ filePath: metaFile, url: allConfig.eagle.stage });
-    await eagle.post('/api/item/addFromURLs', {
-      items: [
-        {
-          url: `${allConfig.eagle.stage}/${metaFile}`,
-          name: `${eagle.generateTitle(modifiedTime)}`,
-          website: url,
-          tags: tagList,
-          annotation: JSON.stringify(annotation),
-        },
-      ],
-      folderId: folder.id,
-    });
-  }
+  await eagle.post('/api/item/addFromPaths', {
+    items: [
+      {
+        path: path.resolve(metaFile),
+        name: `${eagle.generateTitle(modifiedTime)}`,
+        website: url,
+        tags: tagList,
+        annotation: JSON.stringify(annotation),
+      },
+    ],
+    folderId: folder.id,
+  });
+  await utils.sleep(1000);
   if (!allConfig?.meta?.keepMetaFile) {
     fs.unlinkSync(metaFile);
   }

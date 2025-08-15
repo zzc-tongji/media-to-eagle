@@ -298,37 +298,19 @@ const save = async ({ textWithUrl }) => {
   // meta
   const metaFile = path.resolve(allConfig.runtime.wkdir, `com.instagram.${code}.meta.json`);
   fs.writeFileSync(metaFile, JSON.stringify(raw, null, 2));
-  if (check.not.string(allConfig.eagle.stage) || check.emptyString(allConfig.eagle.stage) || !utils.urlRegex.test(allConfig.eagle.stage)) {
-    // local
-    await eagle.post('/api/item/addFromPaths', {
-      items: [
-        {
-          path: path.resolve(metaFile),
-          name: `${eagle.generateTitle(raw.taken_at * 1000)}`,
-          website: url,
-          tags: tagList,
-          annotation: JSON.stringify(annotation),
-        },
-      ],
-      folderId: folder.id,
-    });
-    await utils.sleep(1000);
-  } else {
-    // http upload and download via stage
-    await utils.uploadViaHttp({ filePath: metaFile, url: allConfig.eagle.stage });
-    await eagle.post('/api/item/addFromURLs', {
-      items: [
-        {
-          url: `${allConfig.eagle.stage}/${metaFile}`,
-          name: `${eagle.generateTitle(raw.taken_at * 1000)}`,
-          website: url,
-          tags: tagList,
-          annotation: JSON.stringify(annotation),
-        },
-      ],
-      folderId: folder.id,
-    });
-  }
+  await eagle.post('/api/item/addFromPaths', {
+    items: [
+      {
+        path: path.resolve(metaFile),
+        name: `${eagle.generateTitle(raw.taken_at * 1000)}`,
+        website: url,
+        tags: tagList,
+        annotation: JSON.stringify(annotation),
+      },
+    ],
+    folderId: folder.id,
+  });
+  await utils.sleep(1000);
   if (!allConfig?.meta?.keepMetaFile) {
     fs.unlinkSync(metaFile);
   }
