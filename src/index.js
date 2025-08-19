@@ -11,6 +11,7 @@ import * as com_x from './com.x.js';
 import * as jp_ameblo from './jp.ameblo.js';
 import * as com_pinterest from './com.pinterest.js';
 import * as jp_livedoor_blog from './jp.livedoor.blog.js';
+import * as jp_ne_goo_blog from './jp.ne.goo.blog.js';
 //
 import * as collection from './collection.js';
 import * as eagle from './eagle.js';
@@ -85,6 +86,7 @@ const main = async () => {
     com_x,
     jp_ameblo,
     jp_livedoor_blog,
+    jp_ne_goo_blog,
   };
   for (const key in handlerList) {
     const handler = handlerList[key];

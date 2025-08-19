@@ -41,6 +41,7 @@ const main = async () => {
     // '.ameblo.jp',
     // '.pinterest.com',
     // '.blog.livedoor.jp',
+    // '.blog.goo.ne.jp',
     //
     'xiaohongshu.com',
     'instagram.com',
@@ -49,6 +50,7 @@ const main = async () => {
     'ameblo.jp',
     'pinterest.com',
     'blog.livedoor.jp',
+    'blog.goo.ne.jp',
   ];
   folderNameList.map((folderName) => {
     const folder = eagle.searchFolderPreOrder({ name: folderName, data: { children: info.data.folders } });
