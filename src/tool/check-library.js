@@ -40,12 +40,14 @@ const main = async () => {
     '.weibo.com',
     '.x.com',
     '.ameblo.jp',
+    '.blog.livedoor.jp',
     //
     'xiaohongshu.com',
     'instagram.com',
     'weibo.com',
     'x.com',
     'ameblo.jp',
+    'blog.livedoor.jp',
   ];
   for (let i = 0; i < folderNameList.length; i++) {
     const folderName = folderNameList[i];

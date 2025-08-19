@@ -38,15 +38,35 @@ const main = async () => {
     // '.instagram.com',
     // '.weibo.com',
     // '.x.com',
+    // '.ameblo.jp',
+    // '.pinterest.com',
+    // '.blog.livedoor.jp',
     //
     'xiaohongshu.com',
     'instagram.com',
     'weibo.com',
     'x.com',
+    'ameblo.jp',
+    'pinterest.com',
+    'blog.livedoor.jp',
   ];
   folderNameList.map((folderName) => {
     const folder = eagle.searchFolderPreOrder({ name: folderName, data: { children: info.data.folders } });
     if (!folder) {
+      return;
+    }
+    if (folderName.includes('pinterest.com')) {
+      eagle.get('/api/item/list', `limit=1000000&folders=${folder.id}`).then((response) => {
+        if (!check.array(response.data)) {
+          return;
+        }
+        const pinterestList = [];
+        const referenceList = [];
+        response.data.map((item) => (item.url.includes('www.pinterest.com') ? pinterestList : referenceList).push(item.url));
+        fs.writeFileSync(path.resolve(argv.wkdir, `url-list.${folderName}.txt`), pinterestList.join('\n'), { encoding: 'utf-8' });
+        fs.writeFileSync(path.resolve(argv.wkdir, `url-list.${folderName}.reference.txt`), referenceList.sort().join('\n'), { encoding: 'utf-8' });
+        return;
+      });
       return;
     }
     const text = folder.children.map((f) => {
