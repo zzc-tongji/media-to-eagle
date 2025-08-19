@@ -32,14 +32,14 @@ const getUrl = (textWithUrl = '') => {
     url = url.split('?')[0];
     url = url.split('#')[0];
     const u = `https://ameblo.jp/${valid[2]}/entry-${valid[3]}.html`;
-    return { url: u, fetchUrl: u };
+    return { url, fetchUrl: u, collectUrl: u, amebloId: valid[2], blogId: valid[3] };
   }
   valid = /\/([\S]+\.|)ameblo.jp\/([\S]+)\/image-([0-9]+)-([0-9]+)\.html/.exec(url);
   if (valid) {
     url = url.split('?')[0];
     url = url.split('#')[0];
     const u = `https://ameblo.jp/${valid[2]}/entry-${valid[3]}.html`;
-    return { url: u, fetchUrl: u };
+    return { url, fetchUrl: u, collectUrl: u, amebloId: valid[2], blogId: valid[3] };
   }
   return null;
 };
@@ -50,8 +50,8 @@ const save = async ({ textWithUrl }) => {
   if (!temp) {
     throw Error(`jp.ameblo | invalid text with url | textWithUrl = ${textWithUrl}`);
   }
-  const { url, fetchUrl } = temp;
-  if (collection.has(url)) {
+  const { collectUrl, fetchUrl, amebloId, blogId } = temp;
+  if (collection.has(collectUrl)) {
     throw new Error('jp.ameblo | already collected');
   }
   // parse data
@@ -96,7 +96,6 @@ const save = async ({ textWithUrl }) => {
   }
   // common
   const loggedIn = false;
-  const [ , , amebloId, blogId ] = /\/(www\.|)ameblo.jp\/([\S]+)\/entry-([0-9]+)\.html/.exec(url);
   const modifiedTime = new Date(meta.dateModified);
   const modifiedTimestampMs = modifiedTime.getTime();
   const description = $.text().replaceAll(/\n[\f\r\t\v\u0020\u00A0\u2028\u2029]*(?=\n)/g, '\n').replaceAll(/\n{2,}/g, '\n');
@@ -133,7 +132,7 @@ const save = async ({ textWithUrl }) => {
     summary: meta.headline || undefined,
     mediaCount,
     source: `${eagle.generateTitle(modifiedTime)}`,
-    url,
+    url: collectUrl,
   });
   // meta
   entryBodyHtml = entryBodyHtml.replace('</div>', `<date_modified_timestamp_ms value="${modifiedTimestampMs}" />\n</div>`);
@@ -147,7 +146,7 @@ const save = async ({ textWithUrl }) => {
       {
         path: path.resolve(metaFile),
         name: `${eagle.generateTitle(modifiedTime)}`,
-        website: url,
+        website: collectUrl,
         tags: tagList,
         annotation: JSON.stringify(annotation),
       },
@@ -164,7 +163,7 @@ const save = async ({ textWithUrl }) => {
       return {
         url: mediaUrl,
         name: `${eagle.generateTitle(modifiedTimestampMs + 1 + idx)}`,
-        website: url,
+        website: collectUrl,
         tags: tagList,
         annotation: JSON.stringify({ ...annotation, media_url: mediaUrl }),
       };
@@ -173,7 +172,7 @@ const save = async ({ textWithUrl }) => {
   };
   // add to eagle
   await eagle.post('/api/item/addFromURLs', payload);
-  collection.add(url);
+  collection.add(collectUrl);
   // interval
   await utils.sleep(siteConfig.interval);
   //
