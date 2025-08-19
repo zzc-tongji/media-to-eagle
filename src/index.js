@@ -10,6 +10,7 @@ import * as com_weibo from './com.weibo.js';
 import * as com_x from './com.x.js';
 import * as jp_ameblo from './jp.ameblo.js';
 import * as com_pinterest from './com.pinterest.js';
+import * as jp_livedoor_blog from './jp.livedoor.blog.js';
 //
 import * as collection from './collection.js';
 import * as eagle from './eagle.js';
@@ -83,6 +84,7 @@ const main = async () => {
     com_weibo,
     com_x,
     jp_ameblo,
+    jp_livedoor_blog,
   };
   for (const key in handlerList) {
     const handler = handlerList[key];
@@ -110,12 +112,14 @@ const main = async () => {
     '.weibo.com',
     '.x.com',
     '.ameblo.jp',
+    '.jp.livedoor.blog',
     //
     'xiaohongshu.com',
     'instagram.com',
     'weibo.com',
     'x.com',
     'ameblo.jp',
+    'jp.livedoor.blog',
   ];
   folderNameList.map((folderName) => {
     const folder = eagle.searchFolderPreOrder({ name: folderName, data: { children: info.data.folders } });
