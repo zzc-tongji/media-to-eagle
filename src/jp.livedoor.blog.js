@@ -60,7 +60,7 @@ const save = async ({ textWithUrl }) => {
   //
   const html = await utils.getHtmlByFetch({ ...opt, url: fetchUrl });
   let $ = cheerio.load(html);
-  const article = $('article.article:eq(0)');
+  const article = $('article.article');
   if (article.length <= 0) {
     throw Error('jp.livedoor.blog | invalid blog format | element "<article class="article" />" not found');
   }
