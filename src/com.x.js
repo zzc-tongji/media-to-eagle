@@ -196,9 +196,6 @@ const save = async ({ textWithUrl }) => {
     folderId: folder.id,
   });
   await utils.sleep(1000);
-  if (!allConfig?.meta?.keepMetaFile) {
-    fs.unlinkSync(metaFile);
-  }
   // image
   let rtn = `com.x | ok${loggedIn ? ' | login' : ' | non-login'}`;
   const payload = {

@@ -311,9 +311,6 @@ const save = async ({ textWithUrl }) => {
     folderId: folder.id,
   });
   await utils.sleep(1000);
-  if (!allConfig?.meta?.keepMetaFile) {
-    fs.unlinkSync(metaFile);
-  }
   // image
   let payload;
   if (singleImage) {

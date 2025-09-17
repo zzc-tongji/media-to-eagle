@@ -205,9 +205,6 @@ const save = async ({ textWithUrl }) => {
     folderId: folder.id,
   });
   await utils.sleep(1000);
-  if (!allConfig?.meta?.keepMetaFile) {
-    fs.unlinkSync(metaFile);
-  }
   let payload = {};
   if (weibo?.page_info?.object_type === 'story') {
     // video
@@ -380,9 +377,6 @@ const handle27004 = async ({ weiboId, opt }) => {
     folderId: folder.id,
   });
   await utils.sleep(1000);
-  if (!allConfig?.meta?.keepMetaFile) {
-    fs.unlinkSync(metaFile);
-  }
   let payload = {};
   if (data?.page_info?.type === 'video') {
     // video

@@ -179,9 +179,6 @@ const save = async ({ textWithUrl }) => {
     folderId: folder.id,
   });
   await utils.sleep(1000);
-  if (!allConfig?.meta?.keepMetaFile) {
-    fs.unlinkSync(metaFile);
-  }
   // image
   const payload = {
     items: note.imageList.map((image, idx) => {
